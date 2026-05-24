@@ -70,10 +70,13 @@ class KofiNoWick {
     noWickSensitivity:  'Normal',
 
     // Risk dashboard
-    showRisk:      true,
-    accountBal:    100000,
-    riskPct:       2.0,
-    slPips:        30.6,
+    showRisk:       true,
+    accountCurrency:'USD',   // USD | EUR | GBP | JPY | AUD | CAD | CHF
+    accountBal:     100000,
+    riskPct:        2.0,
+    slPips:         30.6,
+    goldPipSize:    'Standard',   // Standard ($10/pip) | Mini ($1/pip) | Micro ($0.10/pip)
+    silverPipSize:  'Standard',   // Standard ($50/pip) | Mini ($5/pip) | Micro ($0.50/pip)
 
     // Win-rate dashboard
     showWinRate:   false,
@@ -348,11 +351,17 @@ class KofiNoWick {
   _computeNoWick() {
     const relTol = KofiNoWick.SENSITIVITY_EPS[this.opts.noWickSensitivity] ?? 1e-5;
     for (const bar of this._candles) {
-      // Absolute tolerance = max(floor, relTol × price) guards against float
-      // representation drift after Python rounding + JSON serialisation.
-      const eps  = Math.max(1e-9, Math.abs(bar.open) * relTol);
-      const bull = bar.close > bar.open && Math.abs(bar.open - bar.low)  <= eps;
-      const bear = bar.close < bar.open && Math.abs(bar.open - bar.high) <= eps;
+      if (bar.open === bar.close) continue;  // skip doji / inside bars
+
+      // Use body (min/max of open,close) so detection works for both bullish
+      // and bearish candles — matching the omarnowick TradingView definition:
+      //   bull ▲: body bottom touches candle low  (no lower wick)
+      //   bear ▼: body top   touches candle high (no upper wick)
+      const eps      = Math.max(1e-9, Math.abs(bar.open) * relTol);
+      const bodyLow  = Math.min(bar.open, bar.close);
+      const bodyHigh = Math.max(bar.open, bar.close);
+      const bull = Math.abs(bodyLow  - bar.low)  <= eps;
+      const bear = Math.abs(bodyHigh - bar.high) <= eps;
       if (bull) this._noWickMarkers.push({ time: bar.time, bull: true  });
       if (bear) this._noWickMarkers.push({ time: bar.time, bull: false });
     }
@@ -587,16 +596,20 @@ class KofiNoWick {
 
   _calcLotSize(riskAmt, slPips) {
     const sym = this.symbol;
-    let pipValue = 10; // default: forex USD-quoted, 1 standard lot = $10/pip
 
-    if (/JPY/.test(sym)) {
-      // JPY pairs: pip = 0.01, contract = 100,000 → pip value ≈ $9.xx (approx)
-      pipValue = 9.1;
-    } else if (/XAU|GOLD/.test(sym)) {
-      // Gold: contract = 100 oz, pip = $0.10 → $10/pip per lot
-      pipValue = 10;
+    // Gold / Silver pip-size multipliers (user-selectable in settings)
+    const GOLD_PV   = { Standard: 10,  Mini: 1,  Micro: 0.1  };
+    const SILVER_PV = { Standard: 50,  Mini: 5,  Micro: 0.5  };
+
+    let pipValue = 10; // default: forex USD-quoted pair, 1 standard lot = $10/pip
+
+    if (/XAU|GOLD/.test(sym)) {
+      pipValue = GOLD_PV[this.opts.goldPipSize] ?? 10;
     } else if (/XAG|SILVER/.test(sym)) {
-      pipValue = 50;
+      pipValue = SILVER_PV[this.opts.silverPipSize] ?? 50;
+    } else if (/JPY/.test(sym)) {
+      // JPY pairs: pip = 0.01, 100,000 units → approx $9.1/pip (USD terms)
+      pipValue = 9.1;
     } else if (/US100|NQ|NDX/.test(sym)) {
       pipValue = 20;
     } else if (/SP500|GSPC|ES/.test(sym)) {
@@ -736,9 +749,30 @@ class KofiNoWick {
 
         <div class="knw-section">RISK DASHBOARD</div>
         ${tog('showRisk',    'Show Risk Dashboard',    o.showRisk)}
-        ${num('accountBal',  'Account Balance ($)',    o.accountBal, 1000)}
-        ${num('riskPct',     'Risk (%)',               o.riskPct,   0.1)}
-        ${num('slPips',      'Stop Loss (pips)',       o.slPips,    0.1)}
+        <label class="knw-field"><span>Account Currency</span>
+          <select data-key="accountCurrency">
+            ${['USD','EUR','GBP','JPY','AUD','CAD','CHF'].map(c =>
+              `<option value="${c}" ${o.accountCurrency === c ? 'selected' : ''}>${c}</option>`
+            ).join('')}
+          </select>
+        </label>
+        ${num('accountBal',  'Account Balance',        o.accountBal, 1000)}
+        ${num('riskPct',     'Percentage Risk (%)',    o.riskPct,   0.1)}
+        ${num('slPips',      'Stop Loss (Pips)',       o.slPips,    0.1)}
+        <label class="knw-field"><span>Gold Pip Size</span>
+          <select data-key="goldPipSize">
+            <option value="Standard" ${o.goldPipSize === 'Standard' ? 'selected' : ''}>Standard ($10/pip)</option>
+            <option value="Mini"     ${o.goldPipSize === 'Mini'     ? 'selected' : ''}>Mini ($1/pip)</option>
+            <option value="Micro"    ${o.goldPipSize === 'Micro'    ? 'selected' : ''}>Micro ($0.10/pip)</option>
+          </select>
+        </label>
+        <label class="knw-field"><span>Silver Pip Size</span>
+          <select data-key="silverPipSize">
+            <option value="Standard" ${o.silverPipSize === 'Standard' ? 'selected' : ''}>Standard ($50/pip)</option>
+            <option value="Mini"     ${o.silverPipSize === 'Mini'     ? 'selected' : ''}>Mini ($5/pip)</option>
+            <option value="Micro"    ${o.silverPipSize === 'Micro'    ? 'selected' : ''}>Micro ($0.50/pip)</option>
+          </select>
+        </label>
 
         <div class="knw-section">WIN RATE DASHBOARD</div>
         ${tog('showWinRate', 'Show Win Rate',   o.showWinRate)}
@@ -763,6 +797,8 @@ class KofiNoWick {
                            'noWickSensitivity'];
     const markerKeys    = ['showNoWick', 'showBullArrows', 'showBearArrows',
                            'bullColor', 'bearColor', 'arrowSize'];
+    // These keys affect the risk panel display only
+    const riskKeys      = ['accountCurrency', 'goldPipSize', 'silverPipSize'];
 
     if (recomputeKeys.includes(key)) {
       this._compute();
@@ -774,6 +810,10 @@ class KofiNoWick {
     this._scheduleDraw();
     this._updateRiskPanel();
     this._updateWinPanel();
+    // Rebuild settings HTML if a selector that affects its own rendering changed
+    if (riskKeys.includes(key)) {
+      // Just refresh displayed values — panel HTML stays intact
+    }
     this._saveSettings();
   }
 
