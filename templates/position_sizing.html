@@ -389,13 +389,27 @@ const PAIR_GROUPS = {
   'JPY Crosses': [
     'EUR/JPY','GBP/JPY','AUD/JPY','CAD/JPY','CHF/JPY','NZD/JPY',
   ],
-  'EUR Crosses': ['EUR/GBP','EUR/CAD','EUR/CHF','EUR/AUD','EUR/NZD'],
-  'GBP Crosses': ['GBP/CAD','GBP/CHF','GBP/AUD','GBP/NZD'],
-  'Other Crosses': ['AUD/CAD','AUD/CHF','AUD/NZD','NZD/CAD','NZD/CHF'],
+  'EUR Crosses': [
+    'EUR/GBP','EUR/CAD','EUR/CHF','EUR/AUD','EUR/NZD',
+  ],
+  'GBP Crosses': [
+    'GBP/CAD','GBP/CHF','GBP/AUD','GBP/NZD',
+  ],
+  'AUD Crosses': [
+    'AUD/CAD','AUD/CHF','AUD/NZD',
+  ],
+  'CAD / NZD Crosses': [
+    'CAD/CHF','NZD/CAD','NZD/CHF',
+  ],
   'Metals': ['XAU/USD'],
 };
 
-const DEFAULT_PAIRS = ['EUR/USD','GBP/USD','AUD/JPY','USD/CAD'];
+const DEFAULT_PAIRS = [
+  'AUD/USD','GBP/USD','AUD/JPY','USD/JPY',
+  'CAD/JPY','USD/CHF','GBP/USD','USD/CAD',
+  'NZD/JPY','AUD/CAD','GBP/JPY','GBP/CAD',
+  'AUD/CHF','CAD/CHF','AUD/NZD','GBP/NZD',
+];
 
 // ── Build <optgroup> HTML for pair selector ──────────────────────────────────
 function buildPairOpts(selected) {

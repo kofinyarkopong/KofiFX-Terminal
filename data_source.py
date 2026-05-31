@@ -53,10 +53,14 @@ OANDA_INSTRUMENT_MAP: dict[str, str] = {
     'NZDUSD': 'NZD_USD',
     # Cross pairs
     'EURGBP': 'EUR_GBP', 'EURJPY': 'EUR_JPY', 'EURCHF': 'EUR_CHF',
-    'EURCAD': 'EUR_CAD', 'GBPJPY': 'GBP_JPY', 'GBPCAD': 'GBP_CAD',
-    'GBPCHF': 'GBP_CHF', 'AUDJPY': 'AUD_JPY', 'AUDCAD': 'AUD_CAD',
-    'AUDCHF': 'AUD_CHF', 'AUDNZD': 'AUD_NZD', 'CADJPY': 'CAD_JPY',
-    'CHFJPY': 'CHF_JPY', 'NZDJPY': 'NZD_JPY',
+    'EURCAD': 'EUR_CAD', 'EURNZD': 'EUR_NZD',
+    'GBPJPY': 'GBP_JPY', 'GBPCAD': 'GBP_CAD', 'GBPCHF': 'GBP_CHF',
+    'GBPNZD': 'GBP_NZD',
+    'AUDJPY': 'AUD_JPY', 'AUDCAD': 'AUD_CAD', 'AUDCHF': 'AUD_CHF',
+    'AUDNZD': 'AUD_NZD',
+    'CADJPY': 'CAD_JPY', 'CADCHF': 'CAD_CHF',
+    'CHFJPY': 'CHF_JPY', 'NZDJPY': 'NZD_JPY', 'NZDCAD': 'NZD_CAD',
+    'NZDCHF': 'NZD_CHF',
     # Metals
     'XAUUSD': 'XAU_USD', 'XAGUSD': 'XAG_USD',
 }
@@ -127,9 +131,14 @@ SYMBOL_MAP: dict[str, str] = {
     "EURCAD": "EURCAD=X",
     "GBPCAD": "GBPCAD=X",
     "GBPCHF": "GBPCHF=X",
+    "GBPNZD": "GBPNZD=X",
+    "EURNZD": "EURNZD=X",
     "AUDCAD": "AUDCAD=X",
     "AUDCHF": "AUDCHF=X",
     "AUDNZD": "AUDNZD=X",
+    "CADCHF": "CADCHF=X",
+    "NZDCAD": "NZDCAD=X",
+    "NZDCHF": "NZDCHF=X",
     "CHFJPY": "CHFJPY=X",
     # Indices
     "DXY":   "DX-Y.NYB",
