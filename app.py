@@ -44,6 +44,10 @@ from data_source import (
 # Vercel injects VERCEL=1 automatically; honour an explicit override too.
 IS_VERCEL = bool(os.getenv('VERCEL') or os.getenv('IS_VERCEL'))
 
+# MetaAPI credentials — set in .env (never commit .env to git)
+METAAPI_TOKEN      = os.getenv('METAAPI_TOKEN',      '').strip()
+METAAPI_ACCOUNT_ID = os.getenv('METAAPI_ACCOUNT_ID', '').strip()
+
 # ---------------------------------------------------------------------------
 # Symbols to pre-warm on startup (the default pane symbols + common extras)
 # ---------------------------------------------------------------------------
@@ -135,19 +139,66 @@ def api_calendar():
 # ---------------------------------------------------------------------------
 # Broker / MetaAPI endpoints  (Exness MT4/MT5 via MetaAPI.cloud)
 # ---------------------------------------------------------------------------
-METAAPI_BASE = "https://mt-client-api-v1.london.agiliumtrade.ai"
+METAAPI_BASE   = "https://mt-client-api-v1.london.agiliumtrade.ai"
+METAAPI_MGMT   = "https://trading-account-management-api.agiliumtrade.ai"
 
 
 def _meta_headers(token: str) -> dict:
     return {"auth-token": token, "Content-Type": "application/json"}
 
 
+def _resolve_token(request_data: dict) -> str:
+    """Return token from request body, falling back to .env METAAPI_TOKEN."""
+    return (request_data.get("token") or METAAPI_TOKEN or "").strip()
+
+
+def _resolve_account(request_data: dict) -> str:
+    """Return accountId from request body, falling back to .env METAAPI_ACCOUNT_ID."""
+    return (request_data.get("accountId") or METAAPI_ACCOUNT_ID or "").strip()
+
+
+@app.route("/api/broker/token-status")
+def broker_token_status():
+    """Tell the frontend whether a server-side token is already configured."""
+    return jsonify({
+        "hasToken":     bool(METAAPI_TOKEN),
+        "hasAccountId": bool(METAAPI_ACCOUNT_ID),
+    })
+
+
+@app.route("/api/broker/accounts-list")
+def broker_accounts_list():
+    """List all MT accounts registered in this MetaAPI user account."""
+    token = request.args.get("token", "").strip() or METAAPI_TOKEN
+    if not token:
+        return jsonify({"error": "token required"}), 400
+    url = f"{METAAPI_MGMT}/users/current/accounts"
+    try:
+        resp = requests.get(url, headers=_meta_headers(token), timeout=12)
+        resp.raise_for_status()
+        accounts = resp.json()
+        out = []
+        for a in (accounts if isinstance(accounts, list) else []):
+            out.append({
+                "id":       a.get("_id",    a.get("id", "")),
+                "name":     a.get("name",   ""),
+                "server":   a.get("server", ""),
+                "platform": a.get("platform", ""),
+                "state":    a.get("state",  ""),
+                "broker":   a.get("broker", ""),
+            })
+        return jsonify(out)
+    except requests.RequestException as exc:
+        logger.error("MetaAPI accounts-list error: %s", exc)
+        return jsonify({"error": str(exc)}), 502
+
+
 @app.route("/api/broker/connect", methods=["POST"])
 def broker_connect():
     """Test MetaAPI connection and return account summary."""
-    data     = request.get_json(force=True) or {}
-    token    = (data.get("token")     or "").strip()
-    acct_id  = (data.get("accountId") or "").strip()
+    data    = request.get_json(force=True) or {}
+    token   = _resolve_token(data)
+    acct_id = _resolve_account(data)
 
     if not token or not acct_id:
         return jsonify({"error": "token and accountId are required"}), 400
@@ -184,8 +235,8 @@ def broker_connect():
 @app.route("/api/broker/account")
 def broker_account():
     """Return live account info for a connected MetaAPI account."""
-    token   = request.args.get("token",     "").strip()
-    acct_id = request.args.get("accountId", "").strip()
+    token   = (request.args.get("token",     "") or METAAPI_TOKEN).strip()
+    acct_id = (request.args.get("accountId", "") or METAAPI_ACCOUNT_ID).strip()
     if not token or not acct_id:
         return jsonify({"error": "token and accountId required"}), 400
 
@@ -202,8 +253,8 @@ def broker_account():
 @app.route("/api/broker/positions")
 def broker_positions():
     """Return open positions for a connected MetaAPI account."""
-    token   = request.args.get("token",     "").strip()
-    acct_id = request.args.get("accountId", "").strip()
+    token   = (request.args.get("token",     "") or METAAPI_TOKEN).strip()
+    acct_id = (request.args.get("accountId", "") or METAAPI_ACCOUNT_ID).strip()
     if not token or not acct_id:
         return jsonify({"error": "token and accountId required"}), 400
 

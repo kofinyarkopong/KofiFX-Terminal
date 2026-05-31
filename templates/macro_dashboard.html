@@ -1281,18 +1281,92 @@ function switchBrokerTab(tab) {
 }
 
 /**
+ * On page load: check whether a server-side token is configured in .env.
+ * If so, pre-fill the token field, fetch accounts list, and auto-connect.
+ */
+async function autoConnectIfConfigured() {
+  try {
+    const res = await fetch('/api/broker/token-status');
+    if (!res.ok) return;
+    const { hasToken, hasAccountId } = await res.json();
+    if (!hasToken) return;
+
+    // Mark token field as pre-configured
+    const tokenInput = document.getElementById('meta-token');
+    tokenInput.value = '••••••••••••••••';
+    tokenInput.disabled = true;
+    tokenInput.style.opacity = '0.6';
+    const hint = document.createElement('p');
+    hint.style.cssText = 'font-size:11px; color:#00d4aa; margin-top:4px;';
+    hint.textContent = '✓ Server token active';
+    tokenInput.parentElement.appendChild(hint);
+
+    // Fetch accounts list and replace text input with dropdown
+    await populateAccountsDropdown();
+
+    // Auto-connect if account ID also set
+    if (hasAccountId) {
+      openBrokerPanel();
+      setMetaDot('connecting');
+      setBrokerBadge('CONNECTING…', '#f0b42922', '#f0b429');
+      setTimeout(() => metaConnect(true), 700);
+    }
+  } catch (_) {}
+}
+
+/** Fetch registered MT accounts and render a dropdown. */
+async function populateAccountsDropdown() {
+  try {
+    const res = await fetch('/api/broker/accounts-list');
+    if (!res.ok) return;
+    const accounts = await res.json();
+    if (!Array.isArray(accounts) || !accounts.length) return;
+
+    const oldInput = document.getElementById('meta-account-id');
+    const container = oldInput.parentElement;
+    const sel = document.createElement('select');
+    sel.id = 'meta-account-id';
+    sel.style.cssText = 'width:100%; background:#121620; border:1px solid #1e2535; border-radius:6px; color:#e2e8f0; padding:6px 10px; font-size:13px;';
+
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '— Select your Exness account —';
+    sel.appendChild(blank);
+
+    accounts.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      const live = a.state === 'DEPLOYED' ? '● LIVE' : `(${a.state || 'pending'})`;
+      opt.textContent = `${a.name || a.id}  ·  ${a.broker || ''}  ·  ${a.platform || ''}  ${live}`;
+      sel.appendChild(opt);
+    });
+
+    if (accounts.length === 1) sel.value = accounts[0].id;
+    container.replaceChild(sel, oldInput);
+  } catch (_) {}
+}
+
+/**
  * Attempt MetaAPI connection.
  * POSTs to /api/broker/connect with {token, accountId}.
  * On success: fetches account info and starts position polling.
+ * @param {boolean} useServerToken  Pass true to use .env token (field may be masked).
  */
-async function metaConnect() {
-  const token     = document.getElementById('meta-token').value.trim();
+async function metaConnect(useServerToken = false) {
+  const rawToken  = document.getElementById('meta-token').value.trim();
+  const token     = (useServerToken || rawToken.startsWith('•')) ? '' : rawToken;
   const accountId = document.getElementById('meta-account-id').value.trim();
 
-  if (!token || !accountId) {
-    showMetaError('Please enter both MetaAPI Token and Account ID.');
+  if (!token && !useServerToken && !rawToken.startsWith('•')) {
+    showMetaError('Please enter your MetaAPI Token.');
     return;
   }
+  if (!accountId) {
+    showMetaError('Please select or enter your Account ID.');
+    return;
+  }
+
+  // inputs validated above
 
   // Show spinner, hide error
   document.getElementById('meta-spinner').classList.remove('hidden');
@@ -1938,7 +2012,10 @@ function dismissToast(el) {
    DEMO — show a sample toast on load to verify the system works
 ================================================================ */
 window.addEventListener('load', () => {
-  // Show a soft demo toast after 2s so the UI is settled
+  // Auto-connect Exness if server token is already configured in .env
+  autoConnectIfConfigured();
+
+  // Show a demo toast after 2s so the toast system is visually verified
   setTimeout(() => {
     showToast('USD', 'Non-Farm Payrolls (demo)', 'in 30m', 'high');
   }, 2000);
