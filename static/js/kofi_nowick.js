@@ -109,6 +109,7 @@ class KofiNoWick {
     this._animId     = null;
     this._riskEl     = null;
     this._winEl      = null;
+    this._quickBar   = null;
     this._settingsEl = null;
     this._settingsOpen = false;
 
@@ -120,6 +121,7 @@ class KofiNoWick {
     this._createCanvas();
     this._createRiskPanel();
     this._createWinPanel();
+    this._createQuickBar();
     this._createSettingsPanel();
 
     // Re-render on any chart navigation
@@ -170,6 +172,7 @@ class KofiNoWick {
     this._scheduleDraw();
     this._updateRiskPanel();
     this._updateWinPanel();
+    this._updateQuickBar();
   }
 
   updateSymbol(symbol) {
@@ -185,12 +188,13 @@ class KofiNoWick {
   }
 
   destroy() {
-    if (this._ro)        this._ro.disconnect();
-    if (this._canvas)    this._canvas.remove();
-    if (this._riskEl)    this._riskEl.remove();
-    if (this._winEl)     this._winEl.remove();
+    if (this._ro)         this._ro.disconnect();
+    if (this._canvas)     this._canvas.remove();
+    if (this._riskEl)     this._riskEl.remove();
+    if (this._winEl)      this._winEl.remove();
+    if (this._quickBar)   this._quickBar.remove();
     if (this._settingsEl) this._settingsEl.remove();
-    if (this._animId)    cancelAnimationFrame(this._animId);
+    if (this._animId)     cancelAnimationFrame(this._animId);
   }
 
   // ── Computation ───────────────────────────────────────────────────────────
@@ -662,6 +666,67 @@ class KofiNoWick {
       </div>`;
   }
 
+  // ── Quick-toggle bar (on-chart pill buttons) ──────────────────────────────
+  _createQuickBar() {
+    this._quickBar = document.createElement('div');
+    this._quickBar.className = 'knw-quickbar';
+    this._quickBar.innerHTML = this._quickBarHTML();
+    this.container.appendChild(this._quickBar);
+
+    // One delegated listener for all pill buttons
+    this._quickBar.addEventListener('click', e => {
+      const btn = e.target.closest('.knw-qbtn');
+      if (!btn) return;
+      e.stopPropagation();
+      const key = btn.dataset.key;
+      if (!key) return;
+
+      // Toggle the option
+      this.opts[key] = !this.opts[key];
+      btn.classList.toggle('knw-qbtn--on', !!this.opts[key]);
+
+      // Apply the effect
+      const recompute = ['showStruct', 'showBosChoch'];
+      if (recompute.includes(key)) { this._compute(); this._applyMarkers(); }
+      else if (key === 'showNoWick') { this._applyMarkers(); }
+
+      this._scheduleDraw();
+      this._updateRiskPanel();
+      this._updateWinPanel();
+
+      // Sync the checkbox in the full settings popup if it is open
+      if (this._settingsEl) {
+        const cb = this._settingsEl.querySelector(`[data-key="${key}"]`);
+        if (cb && cb.type === 'checkbox') cb.checked = this.opts[key];
+      }
+      this._saveSettings();
+    });
+  }
+
+  _quickBarHTML() {
+    const o   = this.opts;
+    const btn = (key, label, title, active) =>
+      `<button class="knw-qbtn${active ? ' knw-qbtn--on' : ''}" data-key="${key}" title="${title}">${label}</button>`;
+    return [
+      btn('showStruct',   'MS',   'Market Structure labels (HH/HL/LH/LL)',  o.showStruct),
+      btn('showBosChoch', 'BOS',  'Break of Structure / Change of Character', o.showBosChoch),
+      btn('showNoWick',   '↑↓',   'No-Wick arrows (▲ / ▼)',                 o.showNoWick),
+      btn('showZone',     'Zone', 'No-Trading Zone shading',                 o.showZone),
+      btn('showRisk',     'Risk', 'Risk / Lot-size dashboard',               o.showRisk),
+      btn('showWinRate',  'W/R',  'Win Rate dashboard',                      o.showWinRate),
+    ].join('');
+  }
+
+  /** Sync all quick-bar button states with current opts (call after loading settings). */
+  _updateQuickBar() {
+    if (!this._quickBar) return;
+    const keys = ['showStruct','showBosChoch','showNoWick','showZone','showRisk','showWinRate'];
+    keys.forEach(key => {
+      const btn = this._quickBar.querySelector(`[data-key="${key}"]`);
+      if (btn) btn.classList.toggle('knw-qbtn--on', !!this.opts[key]);
+    });
+  }
+
   // ── Settings Panel ────────────────────────────────────────────────────────
   _createSettingsPanel() {
     this._settingsEl = document.createElement('div');
@@ -669,6 +734,7 @@ class KofiNoWick {
     this._settingsEl.style.display = 'none';
     this._settingsEl.innerHTML = this._settingsHTML();
     this.container.appendChild(this._settingsEl);
+    this._makeDraggable(this._settingsEl);
 
     // Close on outside click
     document.addEventListener('click', (e) => {
@@ -683,6 +749,41 @@ class KofiNoWick {
     // Live binding — all inputs trigger _onSettingChange
     this._settingsEl.addEventListener('input',  (e) => this._onSettingChange(e));
     this._settingsEl.addEventListener('change', (e) => this._onSettingChange(e));
+  }
+
+  /** Makes an element draggable by its header. */
+  _makeDraggable(el) {
+    const header = el.querySelector('.knw-settings-header');
+    if (!header) return;
+    header.style.cursor = 'grab';
+    let startX, startY, startL, startT;
+
+    header.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.knw-close-btn')) return; // don't drag on close
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      // Switch to fixed so it escapes the stacking context
+      el.style.position = 'fixed';
+      el.style.right    = 'auto';
+      el.style.bottom   = 'auto';
+      el.style.left     = rect.left + 'px';
+      el.style.top      = rect.top  + 'px';
+      startX = e.clientX; startY = e.clientY;
+      startL = rect.left; startT = rect.top;
+      header.style.cursor = 'grabbing';
+
+      const onMove = (e) => {
+        el.style.left = Math.max(0, startL + e.clientX - startX) + 'px';
+        el.style.top  = Math.max(0, startT + e.clientY - startY) + 'px';
+      };
+      const onUp = () => {
+        header.style.cursor = 'grab';
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup',   onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup',   onUp);
+    });
   }
 
   _settingsHTML() {
@@ -810,10 +911,7 @@ class KofiNoWick {
     this._scheduleDraw();
     this._updateRiskPanel();
     this._updateWinPanel();
-    // Rebuild settings HTML if a selector that affects its own rendering changed
-    if (riskKeys.includes(key)) {
-      // Just refresh displayed values — panel HTML stays intact
-    }
+    this._updateQuickBar();   // keep pill buttons in sync with full settings panel
     this._saveSettings();
   }
 

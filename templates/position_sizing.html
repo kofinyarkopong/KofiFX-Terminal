@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KofiFX — Position Sizing Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            deep:    '#090b0f',
+            surface: '#0e1117',
+            panel:   '#121620',
+            hover:   '#1a1f2e',
+            'b':     '#1e2535',
+            'bl':    '#252d3f',
+            accent:  '#00d4aa',
+            muted:   '#7a8499',
+            bull:    '#00c97a',
+            bear:    '#ff4560',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #090b0f;
+      color: #e2e8f0;
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    /* ── Custom input skin ── */
+    .fx-input {
+      display: block;
+      width: 100%;
+      background: #121620;
+      border: 1px solid #1e2535;
+      color: #e2e8f0;
+      border-radius: 5px;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      transition: border-color 0.14s, box-shadow 0.14s;
+      -moz-appearance: textfield;
+    }
+    .fx-input:focus {
+      outline: none;
+      border-color: #00d4aa;
+      box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.10);
+    }
+    .fx-input::placeholder { color: #3a4255; }
+    .fx-input::-webkit-outer-spin-button,
+    .fx-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    select.fx-input option { background: #0e1117; color: #e2e8f0; }
+    select.fx-input optgroup { color: #00d4aa; font-size: 11px; }
+
+    .fx-input.sl-field:focus  { border-color: #ff4560; box-shadow: 0 0 0 2px rgba(255,69,96,0.10); }
+    .fx-input.tp-field:focus  { border-color: #00c97a; box-shadow: 0 0 0 2px rgba(0,201,122,0.10); }
+    .fx-input.sl-field.has-val { border-color: rgba(255,69,96,0.45); }
+    .fx-input.tp-field.has-val { border-color: rgba(0,201,122,0.45); }
+
+    /* ── Section / card chrome ── */
+    .fx-card {
+      background: #0e1117;
+      border: 1px solid #1e2535;
+      border-radius: 8px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .fx-card:hover { border-color: #252d3f; }
+
+    /* ── Micro label ── */
+    .fx-lbl {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #7a8499;
+      margin-bottom: 6px;
+    }
+    .fx-lbl.bear { color: #ff4560; }
+    .fx-lbl.bull { color: #00c97a; }
+
+    /* ── Output stat cells ── */
+    .stat-val {
+      font-size: 20px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      line-height: 1.1;
+      color: #e2e8f0;
+    }
+    .stat-val.sl  { color: #ff4560; }
+    .stat-val.tp  { color: #00c97a; }
+    .stat-val.rr  { color: #00d4aa; font-size: 16px; }
+    .stat-val.dim { color: #7a8499; }
+
+    /* ── Big lot size ── */
+    .lot-big {
+      font-size: 32px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      color: #00d4aa;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    @keyframes lot-pulse {
+      0%   { color: #00d4aa; }
+      40%  { color: #00ffcc; text-shadow: 0 0 8px rgba(0,255,200,0.5); }
+      100% { color: #00d4aa; text-shadow: none; }
+    }
+    .lot-flash { animation: lot-pulse 0.35s ease; }
+
+    /* ── Direction badge ── */
+    .dir-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      padding: 2px 8px;
+      border-radius: 3px;
+      border: 1px solid transparent;
+      transition: all 0.12s;
+    }
+    .dir-long  { background: rgba(0,201,122,0.12); border-color: #00c97a; color: #00c97a; }
+    .dir-short { background: rgba(255,69,96,0.12);  border-color: #ff4560; color: #ff4560; }
+    .dir-none  { background: #121620; border-color: #1e2535; color: #4a5368; }
+
+    /* ── Warning badge ── */
+    .warn-badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 3px;
+      background: rgba(255,165,0,0.12);
+      border: 1px solid rgba(255,165,0,0.4);
+      color: #ffa500;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Remove button ── */
+    .remove-btn {
+      background: none;
+      border: none;
+      color: #3a4255;
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      padding: 3px 5px;
+      border-radius: 3px;
+      transition: color 0.12s, background 0.12s;
+    }
+    .remove-btn:hover { color: #ff4560; background: rgba(255,69,96,0.10); }
+
+    /* ── Add button ── */
+    .add-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #00d4aa;
+      color: #090b0f;
+      border: none;
+      border-radius: 5px;
+      padding: 7px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.14s, transform 0.1s;
+      letter-spacing: 0.02em;
+    }
+    .add-btn:hover  { background: #00bb99; }
+    .add-btn:active { transform: scale(0.97); }
+
+    /* ── Divider ── */
+    .fx-divider { border: none; border-top: 1px solid #1e2535; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #090b0f; }
+    ::-webkit-scrollbar-thumb { background: #1e2535; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #252d3f; }
+
+    /* ── Pill tab ── */
+    .pip-note {
+      font-size: 10px;
+      color: #3a4255;
+      font-style: italic;
+      transition: color 0.2s;
+    }
+
+    /* ── Remove animation ── */
+    .card-removing {
+      opacity: 0;
+      transform: scale(0.97) translateY(-4px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    /* ── Summary stat ── */
+    .sum-stat { border-right: 1px solid #1e2535; padding: 0 20px; }
+    .sum-stat:first-child { padding-left: 0; }
+    .sum-stat:last-child  { border-right: none; }
+  </style>
+</head>
+
+<body>
+
+<!-- ═══════════════════  TOP BAR  ════════════════════════════════════════════ -->
+<header style="background:#0e1117; border-bottom:1px solid #1e2535; height:52px;
+               display:flex; align-items:center; padding:0 20px; gap:14px;
+               position:sticky; top:0; z-index:50;">
+
+  <!-- Brand -->
+  <div style="display:flex; align-items:center; gap:9px; flex-shrink:0;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <polyline points="2,18 8,10 13,14 22,4" stroke="#00d4aa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="16,4 22,4 22,10"       stroke="#00d4aa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span style="font-weight:700; font-size:14px; white-space:nowrap;">
+      KofiFX <span style="color:#00d4aa;">Terminal</span>
+    </span>
+    <span style="color:#252d3f; margin:0 2px;">│</span>
+    <span style="color:#7a8499; font-size:12px; white-space:nowrap;">Position Sizing Dashboard</span>
+  </div>
+
+  <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+    <!-- Market clock placeholder -->
+    <span id="topClock" style="font-family:monospace; font-size:12px; color:#4a5368;"></span>
+    <!-- Back link -->
+    <a href="/" id="backLink"
+       style="color:#7a8499; font-size:11px; font-weight:600; text-decoration:none;
+              display:flex; align-items:center; gap:5px; padding:5px 12px;
+              border-radius:4px; border:1px solid #1e2535; letter-spacing:0.03em;
+              transition:all 0.14s;"
+       onmouseover="this.style.borderColor='#00d4aa';this.style.color='#00d4aa'"
+       onmouseout="this.style.borderColor='#1e2535';this.style.color='#7a8499'">
+      ← Charts
+    </a>
+  </div>
+</header>
+
+<!-- ═══════════════════  MAIN CONTENT  ═══════════════════════════════════════ -->
+<main style="max-width:1280px; margin:0 auto; padding:24px 20px 60px;">
+
+  <!-- ── GLOBAL SETTINGS ──────────────────────────────────────────────────── -->
+  <section class="fx-card" style="padding:20px 22px; margin-bottom:22px;">
+
+    <div style="font-size:10px; font-weight:700; letter-spacing:0.10em;
+                text-transform:uppercase; color:#7a8499; margin-bottom:18px;">
+      Account Settings
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:18px; align-items:end;">
+
+      <!-- Balance -->
+      <div>
+        <label class="fx-lbl" for="gBalance">Account Balance</label>
+        <div style="position:relative;">
+          <span style="position:absolute; left:9px; top:50%; transform:translateY(-50%);
+                       color:#7a8499; pointer-events:none;">$</span>
+          <input id="gBalance" type="number" class="fx-input" value="10000"
+                 min="100" step="500" style="padding-left:20px;" oninput="recalcAll()"/>
+        </div>
+      </div>
+
+      <!-- Risk % -->
+      <div>
+        <label class="fx-lbl" for="gRisk">Risk Percentage</label>
+        <div style="position:relative;">
+          <input id="gRisk" type="number" class="fx-input" value="2"
+                 min="0.1" max="20" step="0.1" style="padding-right:22px;" oninput="recalcAll()"/>
+          <span style="position:absolute; right:9px; top:50%; transform:translateY(-50%);
+                       color:#7a8499; pointer-events:none;">%</span>
+        </div>
+      </div>
+
+      <!-- USD/JPY rate (used for all JPY cross calculations) -->
+      <div>
+        <label class="fx-lbl" for="gUSDJPY">USD / JPY Rate <span style="font-weight:400;opacity:0.7;">(for JPY pairs)</span></label>
+        <input id="gUSDJPY" type="number" class="fx-input" value="150.00"
+               min="50" max="300" step="0.01" oninput="recalcAll()" placeholder="e.g. 150.50"/>
+      </div>
+
+      <!-- Cash at Risk card -->
+      <div style="background:#121620; border:1px solid #252d3f; border-radius:6px;
+                  padding:12px 15px; min-width:0;">
+        <div style="font-size:10px; font-weight:600; letter-spacing:0.06em;
+                    text-transform:uppercase; color:#7a8499; margin-bottom:5px;">
+          Cash at Risk
+        </div>
+        <div id="gCashRisk"
+             style="font-size:26px; font-weight:800; font-family:monospace;
+                    color:#ff4560; line-height:1;">$200.00</div>
+        <div id="gRiskNote"
+             style="font-size:10px; color:#4a5368; margin-top:4px;">2.00% of $10,000</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── SETUPS HEADER ─────────────────────────────────────────────────────── -->
+  <div style="display:flex; align-items:center; justify-content:space-between;
+              margin-bottom:14px;">
+    <div>
+      <span style="font-size:13px; font-weight:600;">Active Setups</span>
+      <span id="setupCounter"
+            style="margin-left:8px; font-size:11px; color:#7a8499; font-family:monospace;"></span>
+    </div>
+    <button class="add-btn" onclick="addSetup()">
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+        <line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="1" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Add Setup
+    </button>
+  </div>
+
+  <!-- ── SETUP CARDS GRID ──────────────────────────────────────────────────── -->
+  <div id="setupsGrid"
+       style="display:grid; grid-template-columns:repeat(auto-fill,minmax(500px,1fr)); gap:16px;">
+    <!-- Injected by JS -->
+  </div>
+
+  <!-- ── EMPTY STATE ────────────────────────────────────────────────────────── -->
+  <div id="emptyState"
+       style="display:none; text-align:center; padding:60px 20px; color:#3a4255;">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+         style="margin:0 auto 16px; display:block; opacity:0.3;">
+      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/>
+      <line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="8"  y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <p style="font-size:14px; margin-bottom:8px;">No setups yet</p>
+    <p style="font-size:12px;">Click <strong style="color:#00d4aa;">Add Setup</strong> to start calculating</p>
+  </div>
+
+  <!-- ── PORTFOLIO SUMMARY ─────────────────────────────────────────────────── -->
+  <section id="summarySection"
+           style="display:none; margin-top:22px;"
+           class="fx-card">
+    <div style="padding:16px 22px; border-bottom:1px solid #1e2535; font-size:10px;
+                font-weight:700; letter-spacing:0.10em; text-transform:uppercase; color:#7a8499;">
+      Portfolio Summary
+    </div>
+    <div style="padding:16px 22px; display:flex; flex-wrap:wrap; gap:0;">
+      <div class="sum-stat">
+        <div class="fx-lbl">Setups</div>
+        <div class="stat-val" id="sumSetups" style="font-size:24px;">0</div>
+      </div>
+      <div class="sum-stat">
+        <div class="fx-lbl">Total Lot Size</div>
+        <div class="stat-val" id="sumLots"
+             style="font-size:24px; color:#00d4aa;">0.00</div>
+      </div>
+      <div class="sum-stat">
+        <div class="fx-lbl">Total Cash Risk</div>
+        <div class="stat-val" id="sumRisk"
+             style="font-size:24px; color:#ff4560;">$0.00</div>
+      </div>
+      <div class="sum-stat">
+        <div class="fx-lbl">% of Account</div>
+        <div class="stat-val" id="sumPct" style="font-size:24px;">0.00%</div>
+      </div>
+      <div class="sum-stat" style="border-right:none; flex:1; min-width:160px;">
+        <div class="fx-lbl">Risk Level</div>
+        <div id="sumLevel" class="stat-val" style="font-size:18px;">—</div>
+      </div>
+    </div>
+  </section>
+
+</main><!-- /main -->
+
+<!-- ═══════════════════  JAVASCRIPT  ═════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ── Pair groups & options ────────────────────────────────────────────────────
+const PAIR_GROUPS = {
+  'Majors': [
+    'EUR/USD','GBP/USD','AUD/USD','NZD/USD',
+    'USD/JPY','USD/CAD','USD/CHF',
+  ],
+  'JPY Crosses': [
+    'EUR/JPY','GBP/JPY','AUD/JPY','CAD/JPY','CHF/JPY','NZD/JPY',
+  ],
+  'EUR Crosses': ['EUR/GBP','EUR/CAD','EUR/CHF','EUR/AUD','EUR/NZD'],
+  'GBP Crosses': ['GBP/CAD','GBP/CHF','GBP/AUD','GBP/NZD'],
+  'Other Crosses': ['AUD/CAD','AUD/CHF','AUD/NZD','NZD/CAD','NZD/CHF'],
+  'Metals': ['XAU/USD'],
+};
+
+const DEFAULT_PAIRS = ['EUR/USD','GBP/USD','AUD/JPY','USD/CAD'];
+
+// ── Build <optgroup> HTML for pair selector ──────────────────────────────────
+function buildPairOpts(selected) {
+  return Object.entries(PAIR_GROUPS).map(([g, pairs]) =>
+    `<optgroup label="${g}">${pairs.map(p =>
+      `<option value="${p}"${p === selected ? ' selected' : ''}>${p}</option>`
+    ).join('')}</optgroup>`
+  ).join('');
+}
+
+// ── Read global settings ─────────────────────────────────────────────────────
+function globals() {
+  const balance  = Math.max(1, parseFloat(document.getElementById('gBalance').value)  || 10000);
+  const risk     = Math.max(0, parseFloat(document.getElementById('gRisk').value)     || 2);
+  const usdjpy   = Math.max(1, parseFloat(document.getElementById('gUSDJPY').value)   || 150);
+  const cashRisk = balance * risk / 100;
+  return { balance, risk, usdjpy, cashRisk };
+}
+
+// ── Pip configuration ────────────────────────────────────────────────────────
+/**
+ * Returns { pipSize, pipValue, note } for a given pair.
+ *
+ * Pip Value per standard lot (100,000 units):
+ *   USD-quoted pairs (EUR/USD, GBP/USD, AUD/USD …)   → fixed $10.00
+ *   USD-base non-JPY (USD/CAD, USD/CHF …)             → 10 / entryPrice
+ *   All JPY crosses                                    → (0.01 / usdjpy) × 100,000
+ *   XAU/USD (Gold)                                     → $1.00 per $0.10 pip
+ */
+function pipConfig(pair, entryPrice, usdjpy) {
+  const p = pair.replace('/', '').toUpperCase();
+
+  if (p === 'XAUUSD') {
+    return {
+      pipSize:  0.10,
+      pipValue: 1.00,
+      note: 'Gold · pip = $0.10 · $1.00/pip per lot',
+    };
+  }
+
+  if (p.includes('JPY')) {
+    const pv = (0.01 / usdjpy) * 100_000;
+    return {
+      pipSize:  0.01,
+      pipValue: pv,
+      note: `JPY · pip = 0.01 · $${pv.toFixed(2)}/pip (USD/JPY ${usdjpy})`,
+    };
+  }
+
+  // USD is the base currency (USD/CAD, USD/CHF, USD/SGD …)
+  if (p.startsWith('USD')) {
+    const price = entryPrice > 0 ? entryPrice : 1;
+    const pv    = 10 / price;
+    return {
+      pipSize:  0.0001,
+      pipValue: pv,
+      note: `USD-base · pip = 0.0001 · $${pv.toFixed(2)}/pip (dynamic)`,
+    };
+  }
+
+  // Default: USD is quote currency, or cross pair approximation
+  return {
+    pipSize:  0.0001,
+    pipValue: 10.0,
+    note: 'Standard · pip = 0.0001 · $10.00/pip',
+  };
+}
+
+// ── Core maths ───────────────────────────────────────────────────────────────
+function calcSetup(id) {
+  const card = document.getElementById(`card-${id}`);
+  if (!card) return null;
+
+  const g      = globals();
+  const pair   = card.querySelector('.c-pair').value;
+  const entry  = parseFloat(card.querySelector('.c-entry').value);
+  const sl     = parseFloat(card.querySelector('.c-sl').value);
+  const tp     = parseFloat(card.querySelector('.c-tp').value);
+
+  const hasEntry = isFinite(entry) && entry > 0;
+  const hasSL    = isFinite(sl)    && sl    > 0;
+  const hasTP    = isFinite(tp)    && tp    > 0;
+
+  // Always sync cash risk label
+  card.querySelector('.c-cash-risk').textContent = `$${g.cashRisk.toFixed(2)}`;
+
+  if (!hasEntry || !hasSL) {
+    applyOutputs(card, null);
+    return null;
+  }
+
+  const { pipSize, pipValue, note } = pipConfig(pair, entry, g.usdjpy);
+
+  const slPips  = Math.abs(entry - sl) / pipSize;
+  const tpPips  = hasTP ? Math.abs(tp - entry) / pipSize : null;
+  const rr      = (tpPips !== null && slPips > 0) ? tpPips / slPips : null;
+  const lotSize = slPips > 0 && pipValue > 0
+                    ? g.cashRisk / (slPips * pipValue)
+                    : null;
+
+  // Infer direction
+  const direction = sl < entry ? 'LONG' : sl > entry ? 'SHORT' : null;
+
+  // TP validity warning
+  let warn = null;
+  if (hasTP) {
+    if (direction === 'LONG'  && tp <= entry) warn = 'TP should be above entry for LONG';
+    if (direction === 'SHORT' && tp >= entry) warn = 'TP should be below entry for SHORT';
+  }
+
+  applyOutputs(card, { slPips, tpPips, rr, lotSize, direction, note, warn, cashRisk: g.cashRisk });
+  return lotSize;
+}
+
+function applyOutputs(card, d) {
+  const q   = s => card.querySelector(s);
+  const slEl = q('.o-sl');
+  const tpEl = q('.o-tp');
+  const rrEl = q('.o-rr');
+  const lotEl = q('.o-lot');
+  const noteEl = q('.pip-note');
+  const dirEl  = q('.dir-badge');
+  const warnEl = q('.warn-area');
+
+  if (!d) {
+    slEl.textContent  = '—';
+    tpEl.textContent  = '—';
+    rrEl.textContent  = '—';
+    lotEl.textContent = '—';
+    if (noteEl) noteEl.textContent = '';
+    if (warnEl) warnEl.innerHTML = '';
+    if (dirEl)  { dirEl.textContent = '——'; dirEl.className = 'dir-badge dir-none'; }
+    return;
+  }
+
+  slEl.textContent = d.slPips.toFixed(1);
+  tpEl.textContent = d.tpPips !== null ? d.tpPips.toFixed(1) : '—';
+
+  if (d.rr !== null) {
+    rrEl.textContent = `1 : ${d.rr.toFixed(2)}`;
+    rrEl.style.color = d.rr >= 2 ? '#00c97a' : d.rr >= 1 ? '#00d4aa' : '#ff4560';
+  } else {
+    rrEl.textContent = '—';
+    rrEl.style.color = '#7a8499';
+  }
+
+  if (d.lotSize !== null && d.lotSize > 0 && isFinite(d.lotSize)) {
+    const prev = lotEl.textContent;
+    const next = d.lotSize >= 0.01 ? d.lotSize.toFixed(2) : d.lotSize.toFixed(4);
+    lotEl.textContent = next;
+    if (prev !== next) {
+      lotEl.classList.remove('lot-flash');
+      void lotEl.offsetWidth;          // force reflow to restart animation
+      lotEl.classList.add('lot-flash');
+    }
+  } else {
+    lotEl.textContent = '—';
+  }
+
+  if (noteEl) noteEl.textContent = d.note;
+
+  if (dirEl && d.direction) {
+    dirEl.textContent = d.direction;
+    dirEl.className   = `dir-badge dir-${d.direction.toLowerCase()}`;
+  } else if (dirEl) {
+    dirEl.textContent = '——';
+    dirEl.className   = 'dir-badge dir-none';
+  }
+
+  if (warnEl) {
+    warnEl.innerHTML = d.warn
+      ? `<span class="warn-badge">⚠ ${d.warn}</span>`
+      : '';
+  }
+}
+
+// ── Recalculate every card ────────────────────────────────────────────────────
+function recalcAll() {
+  const g = globals();
+  document.getElementById('gCashRisk').textContent = `$${g.cashRisk.toFixed(2)}`;
+  document.getElementById('gRiskNote').textContent =
+    `${g.risk.toFixed(2)}% of $${g.balance.toLocaleString()}`;
+
+  let totalLots = 0, totalRisk = 0, validCount = 0;
+
+  document.querySelectorAll('.setup-card').forEach(card => {
+    const id  = card.dataset.setupId;
+    const lot = calcSetup(id);
+    if (lot !== null && lot > 0 && isFinite(lot)) {
+      totalLots += lot;
+      totalRisk += g.cashRisk;
+      validCount++;
+    }
+  });
+
+  const total = document.querySelectorAll('.setup-card').length;
+  document.getElementById('setupCounter').textContent =
+    total ? `(${total} setup${total > 1 ? 's' : ''})` : '';
+
+  // Summary section
+  const sumSec = document.getElementById('summarySection');
+  if (total >= 2) {
+    sumSec.style.display = 'block';
+    document.getElementById('sumSetups').textContent = total;
+    document.getElementById('sumLots').textContent   = totalLots.toFixed(2);
+    document.getElementById('sumRisk').textContent   = `$${totalRisk.toFixed(2)}`;
+    const pct = totalRisk / g.balance * 100;
+    document.getElementById('sumPct').textContent  = `${pct.toFixed(2)}%`;
+    const lvlEl = document.getElementById('sumLevel');
+    if (pct > 10) {
+      lvlEl.textContent = 'High Risk';
+      lvlEl.style.color = '#ff4560';
+    } else if (pct > 5) {
+      lvlEl.textContent = 'Moderate';
+      lvlEl.style.color = '#ffa500';
+    } else {
+      lvlEl.textContent = 'Controlled';
+      lvlEl.style.color = '#00c97a';
+    }
+  } else {
+    sumSec.style.display = 'none';
+  }
+
+  // Empty state
+  document.getElementById('emptyState').style.display  = total ? 'none'  : 'block';
+  document.getElementById('setupsGrid').style.display   = total ? 'grid'  : 'none';
+}
+
+// ── Build a setup card ────────────────────────────────────────────────────────
+let _setupId = 0;
+
+function addSetup(defaultPair) {
+  _setupId++;
+  const id   = _setupId;
+  const pair = defaultPair || DEFAULT_PAIRS[(id - 1) % DEFAULT_PAIRS.length];
+  const g    = globals();
+
+  const card = document.createElement('div');
+  card.className      = 'fx-card setup-card';
+  card.id             = `card-${id}`;
+  card.dataset.setupId = id;
+
+  card.innerHTML = `
+    <!-- ── Card header ── -->
+    <div style="padding:12px 15px; display:flex; align-items:center; gap:10px;
+                border-bottom:1px solid #1e2535; flex-wrap:wrap; gap:8px;">
+
+      <select class="fx-input c-pair"
+              style="width:120px; flex-shrink:0; font-weight:600;"
+              onchange="calcSetup(${id})">
+        ${buildPairOpts(pair)}
+      </select>
+
+      <span class="dir-badge dir-none">——</span>
+
+      <span class="pip-note" style="flex:1; min-width:0; overflow:hidden;
+                                     text-overflow:ellipsis; white-space:nowrap;"></span>
+
+      <div class="warn-area" style="flex-shrink:0;"></div>
+
+      <button class="remove-btn" onclick="removeSetup(${id})" title="Remove this setup">✕</button>
+    </div>
+
+    <!-- ── Price inputs ── -->
+    <div style="padding:15px; border-bottom:1px solid #1e2535;">
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+
+        <div>
+          <label class="fx-lbl" for="entry-${id}">Entry Price</label>
+          <input id="entry-${id}" type="number" class="fx-input c-entry"
+                 placeholder="e.g. 1.08500" step="any" oninput="calcSetup(${id})"/>
+        </div>
+
+        <div>
+          <label class="fx-lbl bear" for="sl-${id}">Stop Loss ↓</label>
+          <input id="sl-${id}" type="number" class="fx-input c-sl sl-field"
+                 placeholder="e.g. 1.08200" step="any"
+                 oninput="this.classList.toggle('has-val',!!this.value); calcSetup(${id})"/>
+        </div>
+
+        <div>
+          <label class="fx-lbl bull" for="tp-${id}">Take Profit ↑</label>
+          <input id="tp-${id}" type="number" class="fx-input c-tp tp-field"
+                 placeholder="e.g. 1.09100" step="any"
+                 oninput="this.classList.toggle('has-val',!!this.value); calcSetup(${id})"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Output stats ── -->
+    <div style="padding:15px;">
+
+      <!-- Four stat chips -->
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px;">
+
+        <div style="background:#121620; border:1px solid #1e2535; border-radius:5px; padding:10px 12px;">
+          <div class="fx-lbl">SL Pips</div>
+          <div class="stat-val sl o-sl">—</div>
+        </div>
+
+        <div style="background:#121620; border:1px solid #1e2535; border-radius:5px; padding:10px 12px;">
+          <div class="fx-lbl">TP Pips</div>
+          <div class="stat-val tp o-tp">—</div>
+        </div>
+
+        <div style="background:#121620; border:1px solid #1e2535; border-radius:5px; padding:10px 12px;">
+          <div class="fx-lbl">Risk : Reward</div>
+          <div class="stat-val rr o-rr" style="font-size:15px;">—</div>
+        </div>
+
+        <div style="background:#121620; border:1px solid #1e2535; border-radius:5px; padding:10px 12px;">
+          <div class="fx-lbl">Cash Risk</div>
+          <div class="stat-val" style="color:#ff4560; font-size:16px;">
+            <span class="c-cash-risk">$${g.cashRisk.toFixed(2)}</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Lot size hero row -->
+      <div style="background:#0a1a15; border:1px solid #00d4aa28; border-radius:6px;
+                  padding:14px 18px; display:flex; align-items:center;
+                  justify-content:space-between; gap:12px;">
+        <div>
+          <div style="font-size:11px; font-weight:700; letter-spacing:0.08em;
+                      text-transform:uppercase; color:#00d4aa; margin-bottom:3px;">
+            Recommended Lot Size
+          </div>
+          <div style="font-size:10px; color:#3a4255;">
+            Standard lot = 100,000 units &nbsp;·&nbsp;
+            Mini = 0.10 &nbsp;·&nbsp; Micro = 0.01
+          </div>
+        </div>
+        <div class="lot-big o-lot">—</div>
+      </div>
+
+    </div>
+  `;
+
+  document.getElementById('setupsGrid').appendChild(card);
+
+  // Small entrance animation
+  card.style.opacity   = '0';
+  card.style.transform = 'translateY(8px)';
+  card.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+  requestAnimationFrame(() => {
+    card.style.opacity   = '1';
+    card.style.transform = 'translateY(0)';
+  });
+
+  setTimeout(() => calcSetup(id), 10);
+  recalcAll();
+}
+
+function removeSetup(id) {
+  const card = document.getElementById(`card-${id}`);
+  if (!card) return;
+  card.classList.add('card-removing');
+  setTimeout(() => { card.remove(); recalcAll(); }, 200);
+}
+
+// ── Clock ────────────────────────────────────────────────────────────────────
+function tickClock() {
+  const now = new Date();
+  const hh  = String(now.getUTCHours()).padStart(2,'0');
+  const mm  = String(now.getUTCMinutes()).padStart(2,'0');
+  const ss  = String(now.getUTCSeconds()).padStart(2,'0');
+  document.getElementById('topClock').textContent = `${hh}:${mm}:${ss} UTC`;
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+// ── On page load — seed two demo setups ──────────────────────────────────────
+(function init() {
+  recalcAll();   // sets initial cash risk label
+
+  // First card: EUR/USD with sample LONG trade
+  addSetup('EUR/USD');
+  setTimeout(() => {
+    const c = document.getElementById('card-1');
+    if (!c) return;
+    c.querySelector('.c-entry').value = '1.08500';
+    c.querySelector('.c-sl').value    = '1.08200';
+    c.querySelector('.c-tp').value    = '1.09100';
+    ['c-sl','c-tp'].forEach(cls => c.querySelector(`.${cls}`).classList.add('has-val'));
+    calcSetup(1);
+    recalcAll();
+  }, 30);
+
+  // Second card: GBP/JPY SHORT demo
+  addSetup('GBP/JPY');
+  setTimeout(() => {
+    const c = document.getElementById('card-2');
+    if (!c) return;
+    c.querySelector('.c-entry').value = '189.500';
+    c.querySelector('.c-sl').value    = '190.200';
+    c.querySelector('.c-tp').value    = '187.500';
+    ['c-sl','c-tp'].forEach(cls => c.querySelector(`.${cls}`).classList.add('has-val'));
+    calcSetup(2);
+    recalcAll();
+  }, 50);
+})();
+</script>
+
+</body>
+</html>

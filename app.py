@@ -104,6 +104,12 @@ def index():
     return render_template("index.html", symbols=SYMBOLS, timeframes=TIMEFRAMES)
 
 
+@app.route("/position-sizing")
+def position_sizing():
+    """Standalone Forex Position Sizing & Risk Dashboard."""
+    return render_template("position_sizing.html")
+
+
 @app.route("/api/ohlcv")
 def api_ohlcv():
     symbol    = request.args.get("symbol",    "EURUSD").upper()

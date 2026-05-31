@@ -131,6 +131,33 @@ html, body {
   color: #000;
 }
 
+/* Tools nav link */
+.top-bar__tools {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+.tools-link {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  transition: color 0.14s, border-color 0.14s, background 0.14s;
+  white-space: nowrap;
+}
+.tools-link:hover {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: rgba(0, 212, 170, 0.07);
+}
+
 /* Status bar (right side) */
 .top-bar__status {
   display: flex;
@@ -509,6 +536,48 @@ html, body {
   padding: 0;
 }
 .knw-color-input:focus { outline: none; border-color: var(--accent); }
+
+/* ── KNW Quick-toggle bar ──────────────────────────────────────────────────── */
+.knw-quickbar {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  z-index: 6;
+  pointer-events: all;
+}
+
+.knw-qbtn {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid var(--border-light);
+  background: rgba(9, 11, 15, 0.72);
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1.6;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+  user-select: none;
+}
+.knw-qbtn:hover {
+  border-color: var(--accent-dim);
+  color: var(--text-primary);
+  background: rgba(0, 212, 170, 0.08);
+}
+.knw-qbtn--on {
+  background: rgba(0, 212, 170, 0.14);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.knw-qbtn--on:hover {
+  background: rgba(0, 212, 170, 0.22);
+}
 
 /* Chart container (fills remaining space) */
 .chart-container {
