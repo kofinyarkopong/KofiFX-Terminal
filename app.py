@@ -132,6 +132,106 @@ def api_calendar():
         return jsonify([])
 
 
+# ---------------------------------------------------------------------------
+# Broker / MetaAPI endpoints  (Exness MT4/MT5 via MetaAPI.cloud)
+# ---------------------------------------------------------------------------
+METAAPI_BASE = "https://mt-client-api-v1.london.agiliumtrade.ai"
+
+
+def _meta_headers(token: str) -> dict:
+    return {"auth-token": token, "Content-Type": "application/json"}
+
+
+@app.route("/api/broker/connect", methods=["POST"])
+def broker_connect():
+    """Test MetaAPI connection and return account summary."""
+    data     = request.get_json(force=True) or {}
+    token    = (data.get("token")     or "").strip()
+    acct_id  = (data.get("accountId") or "").strip()
+
+    if not token or not acct_id:
+        return jsonify({"error": "token and accountId are required"}), 400
+
+    url = f"{METAAPI_BASE}/users/current/accounts/{acct_id}/account-information"
+    try:
+        resp = requests.get(url, headers=_meta_headers(token), timeout=12)
+        if resp.status_code == 401:
+            return jsonify({"error": "Invalid MetaAPI token"}), 401
+        if resp.status_code == 404:
+            return jsonify({"error": "Account not found — check Account ID"}), 404
+        resp.raise_for_status()
+        info = resp.json()
+        return jsonify({
+            "broker":      info.get("broker",    "—"),
+            "name":        info.get("name",      "—"),
+            "balance":     info.get("balance",   0),
+            "equity":      info.get("equity",    0),
+            "margin":      info.get("margin",    0),
+            "freeMargin":  info.get("freeMargin",0),
+            "marginLevel": info.get("marginLevel", 0),
+            "currency":    info.get("currency",  "USD"),
+            "leverage":    info.get("leverage",  100),
+            "platform":    info.get("platform",  "mt5"),
+            "server":      info.get("server",    "—"),
+        })
+    except requests.exceptions.Timeout:
+        return jsonify({"error": "Connection timed out — check your token and account ID"}), 504
+    except requests.RequestException as exc:
+        logger.error("MetaAPI connect error: %s", exc)
+        return jsonify({"error": f"Connection failed: {exc}"}), 502
+
+
+@app.route("/api/broker/account")
+def broker_account():
+    """Return live account info for a connected MetaAPI account."""
+    token   = request.args.get("token",     "").strip()
+    acct_id = request.args.get("accountId", "").strip()
+    if not token or not acct_id:
+        return jsonify({"error": "token and accountId required"}), 400
+
+    url = f"{METAAPI_BASE}/users/current/accounts/{acct_id}/account-information"
+    try:
+        resp = requests.get(url, headers=_meta_headers(token), timeout=10)
+        resp.raise_for_status()
+        return jsonify(resp.json())
+    except requests.RequestException as exc:
+        logger.error("MetaAPI account fetch error: %s", exc)
+        return jsonify({"error": str(exc)}), 502
+
+
+@app.route("/api/broker/positions")
+def broker_positions():
+    """Return open positions for a connected MetaAPI account."""
+    token   = request.args.get("token",     "").strip()
+    acct_id = request.args.get("accountId", "").strip()
+    if not token or not acct_id:
+        return jsonify({"error": "token and accountId required"}), 400
+
+    url = f"{METAAPI_BASE}/users/current/accounts/{acct_id}/positions"
+    try:
+        resp = requests.get(url, headers=_meta_headers(token), timeout=10)
+        resp.raise_for_status()
+        positions = resp.json()
+        # Normalise field names MetaAPI returns
+        out = []
+        for p in (positions if isinstance(positions, list) else []):
+            out.append({
+                "id":         p.get("id",          ""),
+                "symbol":     p.get("symbol",      ""),
+                "type":       p.get("type",        ""),   # POSITION_TYPE_BUY / SELL
+                "volume":     p.get("volume",      0),
+                "openPrice":  p.get("openPrice",   0),
+                "currentPrice": p.get("currentPrice", 0),
+                "profit":     p.get("profit",      0),
+                "swap":       p.get("swap",        0),
+                "openTime":   p.get("time",        ""),
+            })
+        return jsonify(out)
+    except requests.RequestException as exc:
+        logger.error("MetaAPI positions fetch error: %s", exc)
+        return jsonify({"error": str(exc)}), 502
+
+
 @app.route("/api/ohlcv")
 def api_ohlcv():
     symbol    = request.args.get("symbol",    "EURUSD").upper()

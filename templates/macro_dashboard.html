@@ -4,874 +4,1945 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KofiFX Terminal — Macro Intelligence</title>
+  <!-- Tailwind CDN for utility-first layout -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            'bg-deep':    '#090b0f',
-            'bg-panel':   '#0e1117',
-            'bg-toolbar': '#121620',
-            'bg-hover':   '#1a1f2e',
-            'border-dark':'#1e2535',
+            'bg-deep':     '#090b0f',
+            'bg-panel':    '#0e1117',
+            'bg-toolbar':  '#121620',
+            'bg-hover':    '#1a1f2e',
+            'border-dark': '#1e2535',
             'border-light':'#252d3f',
-            'text-primary':'#e2e8f0',
-            'text-secondary':'#7a8499',
-            'text-muted': '#4a5368',
-            'accent':     '#00d4aa',
-            'bull':       '#00c97a',
-            'bear':       '#ff4560',
+            'txt-primary': '#e2e8f0',
+            'txt-secondary':'#7a8499',
+            'txt-muted':   '#4a5368',
+            'accent':      '#00d4aa',
+            'bull':        '#00c97a',
+            'bear':        '#ff4560',
           }
         }
       }
     }
   </script>
-  <style>
-    /* Base reset */
-    *, *::before, *::after { box-sizing: border-box; }
-    body { background: #090b0f; color: #e2e8f0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; margin: 0; }
 
-    /* Scrollbar */
+  <style>
+    /* ============================================================
+       BASE RESET & BODY
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090b0f;
+      color: #e2e8f0;
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* Thin dark scrollbars */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0e1117; }
     ::-webkit-scrollbar-thumb { background: #252d3f; border-radius: 3px; }
 
-    /* Sticky topbar */
-    #topbar { position: sticky; top: 0; z-index: 100; background: #121620; border-bottom: 1px solid #1e2535; }
+    /* ============================================================
+       TOP BAR
+    ============================================================ */
+    #topbar {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: #121620;
+      border-bottom: 1px solid #1e2535;
+    }
 
-    /* Session pill glow */
-    .session-pill { transition: box-shadow 0.3s, color 0.3s, border-color 0.3s; }
-    .session-pill.active { color: #00d4aa; border-color: #00d4aa; box-shadow: 0 0 8px #00d4aa88; }
+    /* Session pill glow when active */
+    .session-pill {
+      border: 1px solid #252d3f;
+      border-radius: 9999px;
+      padding: 2px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #4a5368;
+      transition: box-shadow 0.3s, color 0.3s, border-color 0.3s, background 0.3s;
+      cursor: default;
+      user-select: none;
+    }
+    .session-pill.active {
+      color: #00d4aa;
+      border-color: #00d4aa;
+      background: #00d4aa18;
+      box-shadow: 0 0 8px #00d4aa88;
+    }
 
-    /* RORO gauge */
+    /* ============================================================
+       PANEL CARDS
+    ============================================================ */
+    .panel {
+      background: #0e1117;
+      border: 1px solid #1e2535;
+      border-radius: 8px;
+    }
+    .panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #7a8499;
+    }
+
+    /* ============================================================
+       PULSING LIVE DOT
+    ============================================================ */
+    .live-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #00c97a;
+      display: inline-block;
+      animation: pulse-live 1.5s infinite;
+    }
+    @keyframes pulse-live {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.75); }
+    }
+
+    /* ============================================================
+       RORO GAUGE
+    ============================================================ */
     #gauge-arc { transition: stroke-dashoffset 1s ease; }
 
-    /* Pulsing live dot */
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: 0.4; transform: scale(0.7); }
-    }
-    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #00c97a; display: inline-block; animation: pulse-dot 1.4s infinite; }
-
-    /* Countdown flash */
-    @keyframes flash { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .countdown-near { animation: flash 0.8s infinite; color: #ff4560; }
-
-    /* Bar chart cells */
-    .bar-wrap { position: relative; height: 18px; background: #1a1f2e; border-radius: 3px; overflow: visible; }
-    .bar-fill  { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
-
-    /* Confidence bar */
-    #conf-bar-fill { transition: width 1s ease; }
-
-    /* Responsive grid helpers */
-    @media (max-width: 768px) {
-      .two-col { grid-template-columns: 1fr !important; }
-      .four-col { grid-template-columns: 1fr 1fr !important; }
-    }
-    @media (max-width: 480px) {
-      .four-col { grid-template-columns: 1fr !important; }
+    /* ============================================================
+       CONFIDENCE BAR ANIMATION
+    ============================================================ */
+    #conf-bar {
+      width: 0%;
+      transition: width 1.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Section card */
-    .card { background: #0e1117; border: 1px solid #1e2535; border-radius: 10px; padding: 20px; }
-    .section-title { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #7a8499; margin-bottom: 16px; font-weight: 600; }
+    /* ============================================================
+       CALENDAR TABLE
+    ============================================================ */
+    .cal-row { transition: background 0.15s; }
+    .cal-row:hover { background: #1a1f2e; }
 
-    /* Scanner table */
-    #scanner-table th { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #4a5368; padding: 6px 8px; border-bottom: 1px solid #1e2535; }
-    #scanner-table td { padding: 7px 8px; border-bottom: 1px solid #1a1f2e; font-size: 13px; }
-    #scanner-table tr:last-child td { border-bottom: none; }
-    #scanner-table tr:hover td { background: #1a1f2e; }
+    /* Flashing red when < 1 min */
+    .flash-red { animation: flash 0.6s infinite alternate; }
+    @keyframes flash {
+      from { color: #ff4560; }
+      to   { color: #ff456066; }
+    }
 
-    /* COT bar max widths */
-    .cot-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-    .cot-label { width: 80px; font-size: 12px; color: #7a8499; flex-shrink: 0; text-align: right; }
-    .cot-bar-track { flex: 1; height: 16px; background: #1a1f2e; border-radius: 3px; overflow: hidden; position: relative; }
-    .cot-bar-fill { height: 100%; border-radius: 3px; }
-    .cot-value { width: 65px; font-size: 11px; flex-shrink: 0; }
+    /* ============================================================
+       COT BAR CHART
+    ============================================================ */
+    .cot-bar-bg {
+      background: #1e2535;
+      border-radius: 3px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .cot-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
 
-    /* Sector bar */
-    .sec-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-    .sec-label { width: 130px; font-size: 12px; color: #7a8499; flex-shrink: 0; }
-    .sec-bar-track { flex: 1; height: 14px; background: #1a1f2e; border-radius: 2px; overflow: hidden; }
-    .sec-bar-fill { height: 100%; background: #00c97a; border-radius: 2px; }
-    .sec-value { width: 50px; font-size: 12px; color: #00c97a; flex-shrink: 0; text-align: right; }
+    /* ============================================================
+       SCANNER TABLE
+    ============================================================ */
+    .scanner-row { transition: background 0.15s; }
+    .scanner-row:hover { background: #1a1f2e; }
+    .scanner-row.bull-row:hover { background: #00c97a12; }
+    .scanner-row.bear-row:hover { background: #ff456012; }
 
-    /* WoW mover arrow */
-    .wow-up   { color: #00c97a; }
-    .wow-down { color: #ff4560; }
-    .wow-flat { color: #7a8499; }
+    /* Sort arrow indicator */
+    .sort-arrow::after { content: ' ↕'; opacity: 0.4; font-size: 10px; }
+    .sort-asc::after  { content: ' ↑'; opacity: 0.9; color: #00d4aa; font-size: 10px; }
+    .sort-desc::after { content: ' ↓'; opacity: 0.9; color: #00d4aa; font-size: 10px; }
+
+    /* ============================================================
+       PAIR FOCUS CARD ANIMATION
+    ============================================================ */
+    #pair-context-card {
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    #pair-context-card.hidden-anim {
+      opacity: 0;
+      transform: translateY(-6px);
+      pointer-events: none;
+    }
+
+    /* ============================================================
+       BROKER PANEL COLLAPSIBLE
+    ============================================================ */
+    #broker-body {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.4s ease;
+    }
+    #broker-body.open { max-height: 800px; }
+
+    /* Tab active state */
+    .broker-tab.active {
+      border-bottom: 2px solid #00d4aa;
+      color: #e2e8f0;
+    }
+    .broker-tab {
+      border-bottom: 2px solid transparent;
+      color: #7a8499;
+      cursor: pointer;
+      padding: 6px 16px;
+      font-size: 13px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .broker-tab:hover { color: #e2e8f0; }
+
+    /* ============================================================
+       TOAST NOTIFICATION SYSTEM
+    ============================================================ */
+    #toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 10px;
+      max-width: 340px;
+    }
+    .toast {
+      background: #0e1117;
+      border: 1px solid #1e2535;
+      border-radius: 8px;
+      padding: 12px 14px;
+      position: relative;
+      animation: slide-in 0.3s ease forwards;
+      pointer-events: all;
+    }
+    .toast.toast-high   { border-left: 3px solid #ff4560; }
+    .toast.toast-medium { border-left: 3px solid #f0b429; }
+    .toast.dismissing   { animation: fade-out 0.3s ease forwards; }
+    @keyframes slide-in {
+      from { transform: translateX(110%); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    @keyframes fade-out {
+      to { opacity: 0; transform: translateX(110%); }
+    }
+
+    /* ============================================================
+       MISC HELPERS
+    ============================================================ */
+    .tag-pill {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+    input[type="text"], input[type="password"], select {
+      background: #121620;
+      border: 1px solid #1e2535;
+      border-radius: 6px;
+      color: #e2e8f0;
+      padding: 6px 10px;
+      outline: none;
+      font-size: 13px;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, input[type="password"]:focus, select:focus {
+      border-color: #00d4aa;
+    }
+    select option { background: #121620; }
+
+    button {
+      cursor: pointer;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    button:hover { opacity: 0.85; }
   </style>
 </head>
+
 <body class="min-h-screen">
 
 <!-- ============================================================
-     1. TOP BAR
-     ============================================================ -->
-<header id="topbar" class="px-4 py-2">
-  <div class="max-w-screen-2xl mx-auto flex flex-wrap items-center gap-3">
+     TOAST CONTAINER (fixed, bottom-right)
+============================================================ -->
+<div id="toast-container"></div>
 
-    <!-- Brand -->
-    <a href="/" class="flex items-center gap-2 no-underline">
-      <span class="text-accent font-bold text-lg tracking-tight">KofiFX</span>
-      <span class="text-text-secondary text-sm font-medium">Terminal</span>
-    </a>
-    <span class="text-border-light text-lg select-none">|</span>
-    <span class="text-text-secondary text-xs tracking-widest uppercase">Macro Intelligence</span>
+<!-- ============================================================
+     SECTION 0 — STICKY TOP BAR
+============================================================ -->
+<header id="topbar">
+  <div class="flex items-center justify-between px-4 py-2 gap-4 flex-wrap">
 
-    <!-- Spacer -->
-    <div class="flex-1"></div>
+    <!-- Brand + label -->
+    <div class="flex items-center gap-3">
+      <span class="text-accent font-bold text-base tracking-tight">KofiFX Terminal</span>
+      <span class="text-xs text-txt-muted">|</span>
+      <span class="text-xs font-semibold text-txt-secondary uppercase tracking-widest">Macro Intelligence</span>
+    </div>
 
-    <!-- UTC Clock -->
-    <div class="text-accent font-mono text-sm" id="utc-clock">00:00:00 UTC</div>
-
-    <!-- Session pills -->
-    <div class="flex gap-2">
-      <div class="session-pill border border-border-dark rounded px-2 py-0.5 text-xs font-mono text-text-secondary" data-from="0" data-to="9" id="pill-tokyo">TKY</div>
-      <div class="session-pill border border-border-dark rounded px-2 py-0.5 text-xs font-mono text-text-secondary" data-from="3" data-to="12" id="pill-london">LON</div>
-      <div class="session-pill border border-border-dark rounded px-2 py-0.5 text-xs font-mono text-text-secondary" data-from="13" data-to="21" id="pill-ny">NY</div>
+    <!-- UTC Clock + Session pills -->
+    <div class="flex items-center gap-3">
+      <span class="font-mono text-xs text-txt-secondary" id="utc-clock">00:00:00 UTC</span>
+      <!-- Session pills: TKY 00-09, LON 03-12, NY 13-21 UTC -->
+      <span class="session-pill" id="pill-tky">TKY</span>
+      <span class="session-pill" id="pill-lon">LON</span>
+      <span class="session-pill" id="pill-ny">NY</span>
     </div>
 
     <!-- Nav links -->
-    <a href="/" class="text-text-secondary hover:text-accent text-xs transition-colors">&#8592; Charts</a>
-    <a href="/position-sizing" class="text-text-secondary hover:text-accent text-xs transition-colors">&#9878; Position Sizing</a>
+    <nav class="flex items-center gap-4 text-xs font-medium">
+      <a href="/" class="text-txt-secondary hover:text-accent transition-colors">← Charts</a>
+      <a href="/position-sizing" class="text-txt-secondary hover:text-accent transition-colors">⚖ Position Sizing</a>
+    </nav>
+
   </div>
 </header>
 
 <!-- ============================================================
-     MAIN CONTENT
-     ============================================================ -->
-<main class="max-w-screen-2xl mx-auto px-4 py-6 space-y-6">
+     MAIN CONTENT WRAPPER
+============================================================ -->
+<main class="px-4 py-4 space-y-4 max-w-screen-2xl mx-auto">
 
   <!-- ===========================================================
-       2. RISK REGIME ROW
-       =========================================================== -->
-  <div class="grid two-col gap-4" style="grid-template-columns: 1fr 1fr;">
+       SECTION 1 — EXNESS ACCOUNT PANEL (collapsible)
+  =========================================================== -->
+  <div class="panel overflow-hidden">
 
-    <!-- Left: RORO Gauge + Cross-Asset Tiles -->
-    <div class="card">
-      <p class="section-title">Risk Regime — RORO Score</p>
-      <div class="flex flex-col items-center">
-        <!-- SVG Arc Gauge -->
-        <svg viewBox="0 0 200 120" width="220" height="130">
-          <!-- Background arc -->
-          <path d="M20,110 A90,90 0 0,1 180,110" fill="none" stroke="#1a1f2e" stroke-width="16" stroke-linecap="round"/>
-          <!-- Coloured arc (id=gauge-arc) — dasharray=283 (half circle circumference ~282.7) -->
-          <path id="gauge-arc"
-                d="M20,110 A90,90 0 0,1 180,110"
-                fill="none"
-                stroke="#f0b429"
-                stroke-width="16"
-                stroke-linecap="round"
-                stroke-dasharray="283"
-                stroke-dashoffset="130"
-                style="transform-origin:100px 110px"/>
-          <!-- Zone labels -->
-          <text x="14" y="126" font-size="8" fill="#ff4560" text-anchor="middle">RISK OFF</text>
-          <text x="100" y="18" font-size="8" fill="#7a8499" text-anchor="middle">NEUTRAL</text>
-          <text x="186" y="126" font-size="8" fill="#00c97a" text-anchor="middle">RISK ON</text>
-          <!-- Score -->
-          <text id="roro-score-text" x="100" y="90" font-size="28" font-weight="bold" fill="#f0b429" text-anchor="middle">+11</text>
-          <text x="100" y="106" font-size="10" fill="#7a8499" text-anchor="middle">NEUTRAL</text>
-        </svg>
-
-        <!-- Cross-asset mini tiles -->
-        <div class="grid grid-cols-5 gap-2 w-full mt-4" id="cross-asset-tiles">
-          <!-- Populated by JS -->
-          <div class="bg-bg-hover rounded p-2 text-center text-xs col-span-1" data-symbol="SPX500">
-            <div class="text-text-muted text-xs">S&amp;P500</div>
-            <div class="text-text-primary font-mono font-medium" id="tile-SPX500">--</div>
-            <div class="font-mono text-xs" id="tile-SPX500-chg">--</div>
-          </div>
-          <div class="bg-bg-hover rounded p-2 text-center text-xs col-span-1" data-symbol="USDJPY">
-            <div class="text-text-muted text-xs">USD/JPY</div>
-            <div class="text-text-primary font-mono font-medium" id="tile-USDJPY">--</div>
-            <div class="font-mono text-xs" id="tile-USDJPY-chg">--</div>
-          </div>
-          <div class="bg-bg-hover rounded p-2 text-center text-xs col-span-1" data-symbol="XAUUSD">
-            <div class="text-text-muted text-xs">GOLD</div>
-            <div class="text-text-primary font-mono font-medium" id="tile-XAUUSD">--</div>
-            <div class="font-mono text-xs" id="tile-XAUUSD-chg">--</div>
-          </div>
-          <div class="bg-bg-hover rounded p-2 text-center text-xs col-span-1" data-symbol="WTIUSD">
-            <div class="text-text-muted text-xs">WTI OIL</div>
-            <div class="text-text-primary font-mono font-medium" id="tile-WTIUSD">--</div>
-            <div class="font-mono text-xs" id="tile-WTIUSD-chg">--</div>
-          </div>
-          <div class="bg-bg-hover rounded p-2 text-center text-xs col-span-1" data-symbol="VIX">
-            <div class="text-text-muted text-xs">VIX</div>
-            <div class="text-text-primary font-mono font-medium" id="tile-VIX">--</div>
-            <div class="font-mono text-xs" id="tile-VIX-chg">--</div>
-          </div>
-        </div>
+    <!-- Header row — always visible, click to expand/collapse -->
+    <div
+      id="broker-header"
+      class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-bg-hover transition-colors"
+      onclick="toggleBroker()"
+    >
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-semibold text-txt-primary">🔗 Exness Account Connection</span>
+        <!-- Status badge -->
+        <span
+          id="broker-status-badge"
+          class="tag-pill"
+          style="background:#1e2535; color:#7a8499;"
+        >DISCONNECTED</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button
+          id="broker-connect-btn"
+          onclick="event.stopPropagation(); openBrokerPanel()"
+          class="text-xs font-semibold px-3 py-1 rounded-full"
+          style="background:#00d4aa22; color:#00d4aa; border:1px solid #00d4aa44;"
+        >Connect</button>
+        <span id="broker-chevron" class="text-txt-muted text-xs transition-transform">▼</span>
       </div>
     </div>
 
-    <!-- Right: AI Sentiment Banner -->
-    <div class="card flex flex-col justify-between">
-      <div>
-        <p class="section-title">AI Sentiment — Rule-Based Analysis</p>
-        <div class="flex items-center gap-2 mb-4">
-          <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#1a1f2e;color:#f0b429;">NEUTRAL</span>
-          <span class="text-text-muted text-xs">RORO +11 | COT-derived</span>
+    <!-- Collapsible body -->
+    <div id="broker-body">
+      <div class="px-4 pb-4 border-t border-border-dark">
+
+        <!-- Tab bar -->
+        <div class="flex gap-0 mt-3 border-b border-border-dark">
+          <span class="broker-tab active" id="tab-meta" onclick="switchBrokerTab('meta')">MT4/MT5 via MetaAPI</span>
+          <span class="broker-tab" id="tab-demo" onclick="switchBrokerTab('demo')">Demo Mode</span>
         </div>
-        <p class="text-text-primary text-sm leading-relaxed mb-3">
-          JPY and CHF positioning stretched short — risk-off flows may accelerate if data disappoints.
-          Non-commercial accounts hold significant net-short exposure in CAD and GBP, suggesting continued
-          USD strength bias. NATGAS speculative longs at multi-month extremes; mean-reversion risk elevated.
-          Equity sentiment neutral with modest sector rotation into defensives. Watch central bank divergence
-          (Fed vs. BoJ) as primary macro driver for the week.
-        </p>
+
+        <!-- ---- MT4/MT5 TAB ---- -->
+        <div id="panel-meta" class="mt-4 space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-txt-muted block mb-1">MetaAPI Token</label>
+              <input type="password" id="meta-token" class="w-full" placeholder="Paste your MetaAPI token…" />
+            </div>
+            <div>
+              <label class="text-xs text-txt-muted block mb-1">Account ID</label>
+              <input type="text" id="meta-account-id" class="w-full" placeholder="e.g. abc123def456" />
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button
+              onclick="metaConnect()"
+              class="px-4 py-2 rounded-md text-sm font-semibold"
+              style="background:#00d4aa; color:#090b0f;"
+            >Test Connection</button>
+            <!-- Spinner (hidden by default) -->
+            <span id="meta-spinner" class="hidden text-xs text-txt-muted animate-pulse">Connecting…</span>
+            <!-- Status dot -->
+            <span id="meta-status-dot" class="w-2 h-2 rounded-full" style="background:#4a5368;"></span>
+            <span id="meta-status-txt" class="text-xs text-txt-muted">Not connected</span>
+          </div>
+
+          <p class="text-xs text-txt-muted">
+            Get your free MetaAPI token at
+            <a href="https://metaapi.cloud" target="_blank" class="text-accent underline">metaapi.cloud</a>
+            — connect any Exness MT4/MT5 account.
+          </p>
+
+          <!-- Account cards (hidden until connected) -->
+          <div id="meta-account-cards" class="hidden space-y-3">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2" id="meta-cards-grid">
+              <!-- Populated by JS -->
+            </div>
+            <!-- Open positions table -->
+            <div>
+              <p class="panel-title mb-2">Open Positions</p>
+              <div class="overflow-x-auto">
+                <table class="w-full text-xs">
+                  <thead>
+                    <tr class="text-txt-muted border-b border-border-dark">
+                      <th class="text-left py-1 pr-3">Symbol</th>
+                      <th class="text-left py-1 pr-3">Type</th>
+                      <th class="text-right py-1 pr-3">Volume</th>
+                      <th class="text-right py-1 pr-3">Open Price</th>
+                      <th class="text-right py-1 pr-3">Current Price</th>
+                      <th class="text-right py-1">P&amp;L</th>
+                    </tr>
+                  </thead>
+                  <tbody id="meta-positions-body">
+                    <tr><td colspan="6" class="py-3 text-center text-txt-muted">No open positions</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <!-- Error message -->
+          <div id="meta-error" class="hidden text-xs text-bear bg-bear/10 border border-bear/30 rounded p-2"></div>
+        </div>
+
+        <!-- ---- DEMO TAB ---- -->
+        <div id="panel-demo" class="hidden mt-4 space-y-3">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="w-2 h-2 rounded-full bg-bull"></span>
+            <span class="text-xs text-bull font-semibold">DEMO MODE ACTIVE</span>
+          </div>
+          <!-- Demo account cards -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            <div class="panel p-2 text-center"><p class="text-xs text-txt-muted">Balance</p><p class="font-bold text-sm">$10,000</p></div>
+            <div class="panel p-2 text-center"><p class="text-xs text-txt-muted">Equity</p><p class="font-bold text-sm">$10,247</p></div>
+            <div class="panel p-2 text-center"><p class="text-xs text-txt-muted">Margin</p><p class="font-bold text-sm">$1,200</p></div>
+            <div class="panel p-2 text-center"><p class="text-xs text-txt-muted">Free Margin</p><p class="font-bold text-sm">$9,047</p></div>
+            <div class="panel p-2 text-center"><p class="text-xs text-txt-muted">Margin Level</p><p class="font-bold text-sm">854%</p></div>
+            <div class="panel p-2 text-center">
+              <p class="text-xs text-txt-muted">Daily P&amp;L</p>
+              <p class="font-bold text-sm text-bull">▲$247</p>
+            </div>
+          </div>
+          <!-- Demo positions -->
+          <div>
+            <p class="panel-title mb-2">Demo Positions</p>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="text-txt-muted border-b border-border-dark">
+                    <th class="text-left py-1 pr-3">Symbol</th>
+                    <th class="text-left py-1 pr-3">Type</th>
+                    <th class="text-right py-1 pr-3">Volume</th>
+                    <th class="text-right py-1 pr-3">Open Price</th>
+                    <th class="text-right py-1 pr-3">Current Price</th>
+                    <th class="text-right py-1">P&amp;L</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-b border-border-dark/40">
+                    <td class="py-1 pr-3 font-mono font-semibold">EURUSD</td>
+                    <td class="pr-3 text-bull font-semibold">BUY</td>
+                    <td class="text-right pr-3">0.50</td>
+                    <td class="text-right pr-3 font-mono">1.08320</td>
+                    <td class="text-right pr-3 font-mono">1.08490</td>
+                    <td class="text-right text-bull font-semibold">+$85.00</td>
+                  </tr>
+                  <tr class="border-b border-border-dark/40">
+                    <td class="py-1 pr-3 font-mono font-semibold">GBPJPY</td>
+                    <td class="pr-3 text-bear font-semibold">SELL</td>
+                    <td class="text-right pr-3">0.30</td>
+                    <td class="text-right pr-3 font-mono">189.420</td>
+                    <td class="text-right pr-3 font-mono">189.180</td>
+                    <td class="text-right text-bull font-semibold">+$72.00</td>
+                  </tr>
+                  <tr>
+                    <td class="py-1 pr-3 font-mono font-semibold">XAUUSD</td>
+                    <td class="pr-3 text-bull font-semibold">BUY</td>
+                    <td class="text-right pr-3">0.10</td>
+                    <td class="text-right pr-3 font-mono">2310.00</td>
+                    <td class="text-right pr-3 font-mono">2318.50</td>
+                    <td class="text-right text-bull font-semibold">+$85.00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div><!-- /panel-demo -->
+
       </div>
+    </div><!-- /broker-body -->
+  </div><!-- /broker panel -->
+
+  <!-- ===========================================================
+       SECTION 2 — RISK REGIME ROW (2 columns)
+  =========================================================== -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+    <!-- LEFT — RORO Gauge + Pair Focus -->
+    <div class="panel p-4 space-y-4">
+      <p class="panel-title">Risk-On / Risk-Off Gauge</p>
+
+      <!-- SVG half-circle gauge -->
+      <div class="flex flex-col items-center">
+        <svg viewBox="0 0 200 110" width="200" height="110">
+          <!-- Background arc -->
+          <path d="M 10 100 A 90 90 0 0 1 190 100"
+            fill="none" stroke="#1e2535" stroke-width="14" stroke-linecap="round"/>
+          <!-- Coloured foreground arc — stroke-dasharray = π*90 ≈ 282.74 -->
+          <path id="gauge-arc"
+            d="M 10 100 A 90 90 0 0 1 190 100"
+            fill="none" stroke="#f0b429" stroke-width="14" stroke-linecap="round"
+            stroke-dasharray="282.74" stroke-dashoffset="282.74"/>
+          <!-- Score text -->
+          <text x="100" y="88" text-anchor="middle" fill="#e2e8f0" font-size="26" font-weight="700" font-family="monospace">+11</text>
+          <text x="100" y="105" text-anchor="middle" fill="#f0b429" font-size="11" font-weight="600" letter-spacing="1">NEUTRAL</text>
+        </svg>
+        <div class="flex justify-between w-full max-w-[200px] mt-1 text-xs text-txt-muted">
+          <span>RISK-OFF −100</span>
+          <span>+100 RISK-ON</span>
+        </div>
+      </div>
+
+      <!-- Cross-asset mini-tiles -->
+      <div class="grid grid-cols-5 gap-2" id="roro-tiles">
+        <!-- Populated by JS; fallback shown initially -->
+        <div class="panel p-2 text-center">
+          <p class="text-xs text-txt-muted mb-0.5">S&amp;P500</p>
+          <p id="tile-SP500-price" class="font-bold text-xs font-mono">--</p>
+          <p id="tile-SP500-chg" class="text-xs text-txt-muted">--</p>
+        </div>
+        <div class="panel p-2 text-center">
+          <p class="text-xs text-txt-muted mb-0.5">USD/JPY</p>
+          <p id="tile-USDJPY-price" class="font-bold text-xs font-mono">--</p>
+          <p id="tile-USDJPY-chg" class="text-xs text-txt-muted">--</p>
+        </div>
+        <div class="panel p-2 text-center">
+          <p class="text-xs text-txt-muted mb-0.5">GOLD</p>
+          <p id="tile-XAUUSD-price" class="font-bold text-xs font-mono">--</p>
+          <p id="tile-XAUUSD-chg" class="text-xs text-txt-muted">--</p>
+        </div>
+        <div class="panel p-2 text-center">
+          <p class="text-xs text-txt-muted mb-0.5">WTI OIL</p>
+          <p id="tile-USOIL-price" class="font-bold text-xs font-mono">--</p>
+          <p id="tile-USOIL-chg" class="text-xs text-txt-muted">--</p>
+        </div>
+        <div class="panel p-2 text-center">
+          <p class="text-xs text-txt-muted mb-0.5">VIX</p>
+          <p class="font-bold text-xs font-mono text-txt-muted">--</p>
+          <p class="text-xs text-txt-muted">--</p>
+        </div>
+      </div>
+
+      <!-- Pair Focus Picker -->
+      <div class="space-y-2">
+        <label class="panel-title block">Pair Focus</label>
+        <select id="pair-focus-select" class="w-full" onchange="updatePairContext()">
+          <option value="">— Select a pair —</option>
+          <option value="EURUSD">EURUSD</option>
+          <option value="GBPUSD">GBPUSD</option>
+          <option value="AUDUSD">AUDUSD</option>
+          <option value="NZDUSD">NZDUSD</option>
+          <option value="USDJPY">USDJPY</option>
+          <option value="USDCAD">USDCAD</option>
+          <option value="USDCHF">USDCHF</option>
+          <option value="GBPJPY">GBPJPY</option>
+          <option value="AUDJPY">AUDJPY</option>
+          <option value="CADJPY">CADJPY</option>
+          <option value="EURJPY">EURJPY</option>
+          <option value="NZDJPY">NZDJPY</option>
+          <option value="CADCHF">CADCHF</option>
+          <option value="AUDCHF">AUDCHF</option>
+          <option value="AUDNZD">AUDNZD</option>
+          <option value="GBPNZD">GBPNZD</option>
+          <option value="XAUUSD">XAUUSD</option>
+        </select>
+
+        <!-- Pair context card — hidden until selection -->
+        <div id="pair-context-card" class="panel p-3 space-y-2 hidden-anim" style="display:none;">
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            <div>
+              <span class="text-txt-muted">COT Context</span>
+              <p id="ctx-cot" class="text-txt-primary mt-0.5"></p>
+            </div>
+            <div>
+              <span class="text-txt-muted">Session</span>
+              <p id="ctx-session" class="text-txt-primary mt-0.5"></p>
+            </div>
+            <div>
+              <span class="text-txt-muted">Bias</span>
+              <p id="ctx-bias" class="text-accent mt-0.5 font-medium"></p>
+            </div>
+            <div>
+              <span class="text-txt-muted">Key Risk</span>
+              <p id="ctx-risk" class="text-bear mt-0.5"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /left -->
+
+    <!-- RIGHT — AI Sentiment -->
+    <div class="panel p-4 space-y-4">
+      <p class="panel-title">AI Sentiment</p>
+
+      <!-- Overall regime label -->
+      <div class="flex items-center gap-3">
+        <span
+          class="text-2xl font-black tracking-tight"
+          style="color:#f0b429;"
+        >NEUTRAL</span>
+        <span class="text-xs text-txt-muted">RORO Score: +11</span>
+      </div>
+
       <!-- Confidence bar -->
       <div>
-        <div class="flex justify-between text-xs text-text-secondary mb-1">
-          <span>Signal Confidence</span>
-          <span class="text-accent font-mono">87%</span>
+        <div class="flex justify-between text-xs text-txt-muted mb-1">
+          <span>Confidence</span>
+          <span id="conf-label">87%</span>
         </div>
-        <div class="w-full h-2 rounded-full" style="background:#1a1f2e;">
-          <div id="conf-bar-fill" class="h-2 rounded-full" style="width:0%;background:#00d4aa;"></div>
+        <div class="h-2 rounded-full" style="background:#1e2535; overflow:hidden;">
+          <div id="conf-bar" class="h-full rounded-full" style="background:linear-gradient(90deg,#00d4aa,#00c97a);"></div>
         </div>
-        <p class="text-text-muted text-xs mt-2">Based on COT net positions, RORO score, and cross-asset correlation signals.</p>
       </div>
-    </div>
-  </div>
+
+      <!-- Structured currency analysis -->
+      <div class="space-y-2">
+        <p class="text-xs text-txt-muted uppercase tracking-widest font-semibold mb-2">Currency Positioning Analysis</p>
+
+        <!-- Each line: tag + currency + description -->
+        <div class="flex items-start gap-2 text-xs">
+          <span class="tag-pill mt-0.5" style="background:#00c97a22;color:#00c97a;">STRONG</span>
+          <div><span class="font-semibold text-txt-primary">USD</span> <span class="text-txt-secondary">— Rate differential supports USD across the board</span></div>
+        </div>
+        <div class="flex items-start gap-2 text-xs">
+          <span class="tag-pill mt-0.5" style="background:#f0b42922;color:#f0b429;">STRETCHED</span>
+          <div><span class="font-semibold text-txt-primary">JPY</span> <span class="text-txt-secondary">— −115k net short; reversal risk elevated if BoJ signals</span></div>
+        </div>
+        <div class="flex items-start gap-2 text-xs">
+          <span class="tag-pill mt-0.5" style="background:#ff456022;color:#ff4560;">BEARISH</span>
+          <div><span class="font-semibold text-txt-primary">CAD</span> <span class="text-txt-secondary">— −69k net short; CAD weakness likely to persist near-term</span></div>
+        </div>
+        <div class="flex items-start gap-2 text-xs">
+          <span class="tag-pill mt-0.5" style="background:#ff456022;color:#ff4560;">EXTREME LONG</span>
+          <div><span class="font-semibold text-txt-primary">NATGAS</span> <span class="text-txt-secondary">— +253k; fade risk on any supply data</span></div>
+        </div>
+        <div class="flex items-start gap-2 text-xs">
+          <span class="tag-pill mt-0.5" style="background:#00c97a22;color:#00c97a;">BULLISH</span>
+          <div><span class="font-semibold text-txt-primary">GOLD</span> <span class="text-txt-secondary">— +154k net long; macro safe-haven demand intact</span></div>
+        </div>
+        <div class="flex items-start gap-2 text-xs">
+          <span class="tag-pill mt-0.5" style="background:#ff456022;color:#ff4560;">BEARISH</span>
+          <div><span class="font-semibold text-txt-primary">EUR</span> <span class="text-txt-secondary">— Modest net long but momentum fading on ECB hold</span></div>
+        </div>
+        <div class="flex items-start gap-2 text-xs">
+          <span class="tag-pill mt-0.5" style="background:#7a849922;color:#7a8499;">NEUTRAL</span>
+          <div><span class="font-semibold text-txt-primary">GBP</span> <span class="text-txt-secondary">— −61k net short; crowded short, watch for squeeze</span></div>
+        </div>
+        <div class="flex items-start gap-2 text-xs">
+          <span class="tag-pill mt-0.5" style="background:#00c97a22;color:#00c97a;">BULLISH</span>
+          <div><span class="font-semibold text-txt-primary">AUD</span> <span class="text-txt-secondary">— Commodity demand supports mild AUD longs</span></div>
+        </div>
+      </div>
+    </div><!-- /right -->
+
+  </div><!-- /section 2 grid -->
 
   <!-- ===========================================================
-       3. ECONOMIC CALENDAR
-       =========================================================== -->
-  <div class="card">
-    <div class="flex items-center justify-between mb-4">
-      <p class="section-title mb-0">Economic Calendar — Today (UTC)</p>
-      <div class="flex items-center gap-2">
-        <span class="live-dot"></span>
-        <span class="text-xs text-text-secondary font-mono">LIVE</span>
-      </div>
-    </div>
-    <div id="calendar-container" class="overflow-x-auto">
-      <div class="text-text-muted text-sm">Loading calendar...</div>
-    </div>
-  </div>
+       SECTION 3 — HIGH-IMPACT EVENTS / ECONOMIC CALENDAR
+  =========================================================== -->
+  <div class="panel p-4">
 
-  <!-- ===========================================================
-       4. CURRENCY PULSE
-       =========================================================== -->
-  <div class="card">
-    <p class="section-title">Currency Pulse — Central Bank Snapshot</p>
-    <div class="grid four-col gap-3 mb-3" style="grid-template-columns:repeat(4,1fr);">
-      <!-- USD -->
-      <div class="bg-bg-hover rounded-lg p-3">
-        <div class="text-lg font-bold text-text-primary mb-2">&#127482;&#127480; USD</div>
-        <div class="space-y-1 text-xs">
-          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-accent font-mono">3.64%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span style="color:#00c97a" class="font-mono">3.95%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-primary font-mono">4.30%</span></div>
-        </div>
-      </div>
-      <!-- EUR -->
-      <div class="bg-bg-hover rounded-lg p-3">
-        <div class="text-lg font-bold text-text-primary mb-2">&#127466;&#127482; EUR</div>
-        <div class="space-y-1 text-xs">
-          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-accent font-mono">2.00%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span style="color:#00c97a" class="font-mono">3.00%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-muted font-mono">--</span></div>
-        </div>
-      </div>
-      <!-- GBP -->
-      <div class="bg-bg-hover rounded-lg p-3">
-        <div class="text-lg font-bold text-text-primary mb-2">&#127468;&#127463; GBP</div>
-        <div class="space-y-1 text-xs">
-          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-text-muted font-mono">--</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span style="color:#00c97a" class="font-mono">3.42%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-primary font-mono">5.20%</span></div>
-        </div>
-      </div>
-      <!-- JPY -->
-      <div class="bg-bg-hover rounded-lg p-3">
-        <div class="text-lg font-bold text-text-primary mb-2">&#127471;&#127477; JPY</div>
-        <div class="space-y-1 text-xs">
-          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-accent font-mono">0.73%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span class="text-text-muted font-mono">--</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-primary font-mono">2.70%</span></div>
-        </div>
+    <!-- Notification permission banner (shown via JS if needed) -->
+    <div
+      id="notif-banner"
+      class="hidden mb-3 flex items-center justify-between gap-3 rounded-md px-3 py-2 text-xs"
+      style="background:#f0b42918; border:1px solid #f0b42944; color:#f0b429;"
+    >
+      <span>🔔 Enable browser notifications to receive alerts before high-impact events — 30 min and 5 min warnings.</span>
+      <div class="flex items-center gap-2 shrink-0">
+        <button
+          onclick="requestNotifPermission()"
+          class="px-3 py-1 rounded text-xs font-semibold"
+          style="background:#f0b429; color:#090b0f;"
+        >Enable Notifications</button>
+        <button onclick="document.getElementById('notif-banner').classList.add('hidden')" class="text-txt-muted hover:text-txt-primary">✕</button>
       </div>
     </div>
-    <div class="grid four-col gap-3" style="grid-template-columns:repeat(4,1fr);">
-      <!-- AUD -->
-      <div class="bg-bg-hover rounded-lg p-3">
-        <div class="text-lg font-bold text-text-primary mb-2">&#127462;&#127482; AUD</div>
-        <div class="space-y-1 text-xs">
-          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-accent font-mono">4.10%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span style="color:#00c97a" class="font-mono">2.40%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-primary font-mono">4.26%</span></div>
-        </div>
-      </div>
-      <!-- CAD -->
-      <div class="bg-bg-hover rounded-lg p-3">
-        <div class="text-lg font-bold text-text-primary mb-2">&#127464;&#127462; CAD</div>
-        <div class="space-y-1 text-xs">
-          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-accent font-mono">2.25%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span class="text-text-muted font-mono">--</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-primary font-mono">6.90%</span></div>
-        </div>
-      </div>
-      <!-- CHF -->
-      <div class="bg-bg-hover rounded-lg p-3">
-        <div class="text-lg font-bold text-text-primary mb-2">&#127464;&#127469; CHF</div>
-        <div class="space-y-1 text-xs">
-          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span style="color:#ff4560" class="font-mono">-0.04%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span style="color:#00c97a" class="font-mono">0.03%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-muted font-mono">--</span></div>
-        </div>
-      </div>
-      <!-- NZD -->
-      <div class="bg-bg-hover rounded-lg p-3">
-        <div class="text-lg font-bold text-text-primary mb-2">&#127475;&#127487; NZD</div>
-        <div class="space-y-1 text-xs">
-          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-accent font-mono">4.33%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span style="color:#00c97a" class="font-mono">2.53%</span></div>
-          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-muted font-mono">--</span></div>
-        </div>
-      </div>
-    </div>
-    <p class="text-text-muted text-xs mt-3">snapshot · data from FRED / central banks</p>
-  </div>
 
-  <!-- ===========================================================
-       5. COT POSITIONING
-       =========================================================== -->
-  <div class="grid two-col gap-4" style="grid-template-columns:1fr 1fr;">
-    <!-- Currencies -->
-    <div class="card">
-      <p class="section-title">COT Positioning — Currencies (Non-Commercial Net)</p>
-      <div id="cot-currencies"></div>
-      <p class="text-text-muted text-xs mt-3">Data as of 2026-05-19 · Source: CFTC</p>
+    <!-- Section header -->
+    <div class="flex items-center justify-between mb-3">
+      <p class="panel-title">Economic Calendar — Today (GMT)</p>
+      <span id="cal-date-label" class="text-xs text-txt-muted font-mono"></span>
     </div>
-    <!-- Commodities -->
-    <div class="card">
-      <p class="section-title">COT Positioning — Commodities (Non-Commercial Net)</p>
-      <div id="cot-commodities"></div>
-      <p class="text-text-muted text-xs mt-3">Data as of 2026-05-19 · Source: CFTC</p>
-    </div>
-  </div>
 
-  <!-- ===========================================================
-       6. MULTI-PAIR SCANNER
-       =========================================================== -->
-  <div class="card">
-    <div class="flex items-center justify-between mb-4">
-      <p class="section-title mb-0">Multi-Pair Scanner</p>
-      <div class="flex items-center gap-2">
-        <span class="live-dot"></span>
-        <span class="text-xs text-text-secondary font-mono">LIVE · 5s poll</span>
-      </div>
-    </div>
+    <!-- Calendar table -->
     <div class="overflow-x-auto">
-      <table class="w-full" id="scanner-table">
+      <table class="w-full text-xs">
         <thead>
-          <tr>
-            <th class="text-left">Symbol</th>
-            <th class="text-right">Price</th>
-            <th class="text-right">24h Change</th>
-            <th class="text-right">24h %</th>
-            <th class="text-center">Direction</th>
-            <th class="text-center">Tick</th>
+          <tr class="text-txt-muted border-b border-border-dark">
+            <th class="text-left py-1 pr-3 font-medium">Time GMT</th>
+            <th class="text-left py-1 pr-3 font-medium">Ccy</th>
+            <th class="text-left py-1 pr-3 font-medium">Impact</th>
+            <th class="text-left py-1 pr-3 font-medium">Event</th>
+            <th class="text-right py-1 pr-3 font-medium">Forecast</th>
+            <th class="text-right py-1 pr-3 font-medium">Previous</th>
+            <th class="text-right py-1 font-medium">Countdown</th>
           </tr>
         </thead>
-        <tbody id="scanner-body">
-          <tr><td colspan="6" class="text-text-muted text-sm py-4 text-center">Loading prices...</td></tr>
+        <tbody id="cal-body">
+          <tr>
+            <td colspan="7" class="py-4 text-center text-txt-muted">Loading calendar…</td>
+          </tr>
         </tbody>
       </table>
     </div>
-  </div>
+  </div><!-- /calendar -->
 
   <!-- ===========================================================
-       7. STRETCHED POSITIONING + WEEK-OVER-WEEK MOVERS
-       =========================================================== -->
-  <div class="grid two-col gap-4" style="grid-template-columns:1fr 1fr;">
+       SECTION 4 — CURRENCY PULSE (2×4 grid, hardcoded snapshot)
+  =========================================================== -->
+  <div class="panel p-4">
+    <div class="flex items-center justify-between mb-3">
+      <p class="panel-title">Currency Pulse — Central Bank Snapshot</p>
+      <span class="text-xs text-txt-muted">snapshot · source: FRED / central banks</span>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
 
-    <!-- Stretched Positioning -->
-    <div class="card">
-      <p class="section-title">Stretched Positioning (|NET| &ge; 30% of OI Estimate)</p>
-      <div class="space-y-3" id="stretched-list">
+      <!-- USD -->
+      <div class="panel p-3">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-lg">🇺🇸</span>
+          <span class="font-bold text-sm text-txt-primary">USD</span>
+        </div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-txt-muted">Policy Rate</span><span class="font-mono font-semibold">5.25–5.50%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">CPI y/y</span><span class="font-mono">3.4%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">Unemployment</span><span class="font-mono">3.9%</span></div>
+        </div>
+      </div>
+
+      <!-- EUR -->
+      <div class="panel p-3">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-lg">🇪🇺</span>
+          <span class="font-bold text-sm text-txt-primary">EUR</span>
+        </div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-txt-muted">Policy Rate</span><span class="font-mono font-semibold">4.50%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">CPI y/y</span><span class="font-mono">2.6%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">Unemployment</span><span class="font-mono">6.5%</span></div>
+        </div>
+      </div>
+
+      <!-- GBP -->
+      <div class="panel p-3">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-lg">🇬🇧</span>
+          <span class="font-bold text-sm text-txt-primary">GBP</span>
+        </div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-txt-muted">Policy Rate</span><span class="font-mono font-semibold">5.25%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">CPI y/y</span><span class="font-mono">3.2%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">Unemployment</span><span class="font-mono">4.2%</span></div>
+        </div>
+      </div>
+
+      <!-- JPY -->
+      <div class="panel p-3">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-lg">🇯🇵</span>
+          <span class="font-bold text-sm text-txt-primary">JPY</span>
+        </div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-txt-muted">Policy Rate</span><span class="font-mono font-semibold">0.10%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">CPI y/y</span><span class="font-mono">2.7%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">Unemployment</span><span class="font-mono">2.5%</span></div>
+        </div>
+      </div>
+
+      <!-- AUD -->
+      <div class="panel p-3">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-lg">🇦🇺</span>
+          <span class="font-bold text-sm text-txt-primary">AUD</span>
+        </div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-txt-muted">Policy Rate</span><span class="font-mono font-semibold">4.35%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">CPI y/y</span><span class="font-mono">3.6%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">Unemployment</span><span class="font-mono">3.8%</span></div>
+        </div>
+      </div>
+
+      <!-- CAD -->
+      <div class="panel p-3">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-lg">🇨🇦</span>
+          <span class="font-bold text-sm text-txt-primary">CAD</span>
+        </div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-txt-muted">Policy Rate</span><span class="font-mono font-semibold">5.00%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">CPI y/y</span><span class="font-mono">2.9%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">Unemployment</span><span class="font-mono">6.1%</span></div>
+        </div>
+      </div>
+
+      <!-- CHF -->
+      <div class="panel p-3">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-lg">🇨🇭</span>
+          <span class="font-bold text-sm text-txt-primary">CHF</span>
+        </div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-txt-muted">Policy Rate</span><span class="font-mono font-semibold">1.50%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">CPI y/y</span><span class="font-mono">1.0%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">Unemployment</span><span class="font-mono">2.3%</span></div>
+        </div>
+      </div>
+
+      <!-- NZD -->
+      <div class="panel p-3">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-lg">🇳🇿</span>
+          <span class="font-bold text-sm text-txt-primary">NZD</span>
+        </div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-txt-muted">Policy Rate</span><span class="font-mono font-semibold">5.50%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">CPI y/y</span><span class="font-mono">4.0%</span></div>
+          <div class="flex justify-between"><span class="text-txt-muted">Unemployment</span><span class="font-mono">4.0%</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /currency pulse -->
+
+  <!-- ===========================================================
+       SECTION 5 — COT POSITIONING (2-column side by side)
+  =========================================================== -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+    <!-- Currencies COT -->
+    <div class="panel p-4">
+      <p class="panel-title mb-3">COT Positioning — Currencies (Net Non-Commercial, k contracts)</p>
+      <div class="space-y-2" id="cot-currencies">
         <!-- Populated by JS -->
       </div>
-      <p class="text-text-muted text-xs mt-4">Data as of 2026-05-19 · Source: CFTC</p>
     </div>
 
-    <!-- Week-over-Week Movers -->
-    <div class="card">
-      <p class="section-title">Week-over-Week Movers</p>
-      <div class="mb-4">
-        <p class="text-text-secondary text-xs uppercase tracking-widest mb-2">Currencies</p>
-        <div class="space-y-2" id="wow-currencies"></div>
+    <!-- Commodities COT -->
+    <div class="panel p-4">
+      <p class="panel-title mb-3">COT Positioning — Commodities (Net Non-Commercial, k contracts)</p>
+      <div class="space-y-2" id="cot-commodities">
+        <!-- Populated by JS -->
       </div>
-      <div>
-        <p class="text-text-secondary text-xs uppercase tracking-widest mb-2">Commodities</p>
-        <div class="space-y-2" id="wow-commodities"></div>
-      </div>
-      <p class="text-text-muted text-xs mt-4">Data as of 2026-05-19 · Source: CFTC</p>
     </div>
-  </div>
+
+  </div><!-- /COT -->
 
   <!-- ===========================================================
-       8. SECTOR ROTATION
-       =========================================================== -->
-  <div class="card">
-    <p class="section-title">Sector Rotation — US ETF 5-Day % Change</p>
-    <div id="sector-bars"></div>
-    <p class="text-text-muted text-xs mt-3">5-day sector % change · Source: yfinance · Updated daily</p>
-  </div>
+       SECTION 6 — MULTI-PAIR SCANNER (ALL pairs, live poll)
+  =========================================================== -->
+  <div class="panel p-4">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <div class="flex items-center gap-2">
+        <p class="panel-title">Multi-Pair Scanner</p>
+        <span class="live-dot"></span>
+        <span class="text-xs text-bull font-semibold">LIVE</span>
+      </div>
+      <!-- Search filter -->
+      <input
+        type="text"
+        id="scanner-search"
+        placeholder="Filter symbol…"
+        class="w-32"
+        oninput="renderScannerTable()"
+      />
+    </div>
 
-</main>
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs" id="scanner-table">
+        <thead>
+          <tr class="text-txt-muted border-b border-border-dark">
+            <th class="text-left py-1 pr-3 cursor-pointer sort-arrow" onclick="sortScanner('symbol')">Symbol</th>
+            <th class="text-right py-1 pr-3 cursor-pointer sort-arrow" onclick="sortScanner('price')">Price</th>
+            <th class="text-right py-1 pr-3 cursor-pointer sort-arrow" onclick="sortScanner('change')">Change</th>
+            <th class="text-right py-1 pr-3 cursor-pointer sort-arrow" onclick="sortScanner('changePct')">Change%</th>
+            <th class="text-right py-1 pr-3 cursor-pointer sort-arrow" onclick="sortScanner('direction')">Direction</th>
+            <th class="text-right py-1">Tick</th>
+          </tr>
+        </thead>
+        <tbody id="scanner-body">
+          <tr>
+            <td colspan="6" class="py-4 text-center text-txt-muted">Loading scanner data…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div><!-- /scanner -->
+
+  <!-- ===========================================================
+       SECTION 7 — STRETCHED POSITIONING + WoW MOVERS
+  =========================================================== -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+    <!-- Stretched Positioning -->
+    <div class="panel p-4">
+      <p class="panel-title mb-3">Stretched Positioning — Extreme COT Levels</p>
+      <div class="space-y-2 text-xs">
+        <!-- Each item: label, bar, z-score -->
+        <div class="flex items-center gap-3">
+          <span class="w-20 shrink-0 text-txt-secondary">JPY Short</span>
+          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2535;">
+            <div class="h-full rounded-full" style="width:92%; background:#ff4560;"></div>
+          </div>
+          <span class="w-10 text-right text-bear font-mono">−2.8σ</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-20 shrink-0 text-txt-secondary">NATGAS Long</span>
+          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2535;">
+            <div class="h-full rounded-full" style="width:88%; background:#ff4560;"></div>
+          </div>
+          <span class="w-10 text-right text-bear font-mono">+2.6σ</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-20 shrink-0 text-txt-secondary">GBP Short</span>
+          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2535;">
+            <div class="h-full rounded-full" style="width:75%; background:#f0b429;"></div>
+          </div>
+          <span class="w-10 text-right font-mono" style="color:#f0b429;">−2.1σ</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-20 shrink-0 text-txt-secondary">GOLD Long</span>
+          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2535;">
+            <div class="h-full rounded-full" style="width:70%; background:#f0b429;"></div>
+          </div>
+          <span class="w-10 text-right font-mono" style="color:#f0b429;">+1.9σ</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-20 shrink-0 text-txt-secondary">CAD Short</span>
+          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2535;">
+            <div class="h-full rounded-full" style="width:62%; background:#f0b429;"></div>
+          </div>
+          <span class="w-10 text-right font-mono" style="color:#f0b429;">−1.7σ</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-20 shrink-0 text-txt-secondary">USD Long</span>
+          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2535;">
+            <div class="h-full rounded-full" style="width:55%; background:#00c97a;"></div>
+          </div>
+          <span class="w-10 text-right text-bull font-mono">+1.5σ</span>
+        </div>
+      </div>
+      <p class="text-xs text-txt-muted mt-3">Z-scores relative to 3-year rolling average. ±2σ = extreme.</p>
+    </div>
+
+    <!-- WoW Movers -->
+    <div class="panel p-4">
+      <p class="panel-title mb-3">Week-on-Week COT Movers (Δ contracts)</p>
+      <div class="space-y-2 text-xs">
+        <div class="flex items-center justify-between py-1 border-b border-border-dark/40">
+          <span class="text-txt-secondary w-20">USD</span>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
+            <div class="h-full" style="width:70%; background:#00c97a; margin-left:30%;"></div>
+          </div>
+          <span class="font-mono text-bull w-16 text-right">+18,400</span>
+        </div>
+        <div class="flex items-center justify-between py-1 border-b border-border-dark/40">
+          <span class="text-txt-secondary w-20">JPY</span>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
+            <div class="h-full" style="width:40%; background:#ff4560;"></div>
+          </div>
+          <span class="font-mono text-bear w-16 text-right">−12,200</span>
+        </div>
+        <div class="flex items-center justify-between py-1 border-b border-border-dark/40">
+          <span class="text-txt-secondary w-20">GOLD</span>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
+            <div class="h-full" style="width:55%; background:#00c97a; margin-left:30%;"></div>
+          </div>
+          <span class="font-mono text-bull w-16 text-right">+9,800</span>
+        </div>
+        <div class="flex items-center justify-between py-1 border-b border-border-dark/40">
+          <span class="text-txt-secondary w-20">GBP</span>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
+            <div class="h-full" style="width:35%; background:#ff4560;"></div>
+          </div>
+          <span class="font-mono text-bear w-16 text-right">−8,500</span>
+        </div>
+        <div class="flex items-center justify-between py-1 border-b border-border-dark/40">
+          <span class="text-txt-secondary w-20">WTI OIL</span>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
+            <div class="h-full" style="width:30%; background:#ff4560;"></div>
+          </div>
+          <span class="font-mono text-bear w-16 text-right">−7,100</span>
+        </div>
+        <div class="flex items-center justify-between py-1 border-b border-border-dark/40">
+          <span class="text-txt-secondary w-20">EUR</span>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
+            <div class="h-full" style="width:48%; background:#00c97a; margin-left:30%;"></div>
+          </div>
+          <span class="font-mono text-bull w-16 text-right">+5,300</span>
+        </div>
+        <div class="flex items-center justify-between py-1">
+          <span class="text-txt-secondary w-20">CAD</span>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
+            <div class="h-full" style="width:25%; background:#ff4560;"></div>
+          </div>
+          <span class="font-mono text-bear w-16 text-right">−4,900</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /section 7 -->
+
+  <!-- ===========================================================
+       SECTION 8 — SECTOR ROTATION
+  =========================================================== -->
+  <div class="panel p-4">
+    <p class="panel-title mb-3">Sector Rotation — Risk Appetite Signal</p>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+
+      <!-- Tech -->
+      <div class="panel p-3 text-center">
+        <p class="text-txt-muted mb-1">Technology</p>
+        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2535;">
+          <div class="h-full rounded" style="width:78%; background:#00c97a;"></div>
+        </div>
+        <p class="text-bull font-semibold">OVERWEIGHT</p>
+        <p class="text-txt-muted text-xs mt-0.5">Risk-On</p>
+      </div>
+
+      <!-- Financials -->
+      <div class="panel p-3 text-center">
+        <p class="text-txt-muted mb-1">Financials</p>
+        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2535;">
+          <div class="h-full rounded" style="width:62%; background:#00c97a;"></div>
+        </div>
+        <p class="text-bull font-semibold">OVERWEIGHT</p>
+        <p class="text-txt-muted text-xs mt-0.5">Rate Sensitive</p>
+      </div>
+
+      <!-- Energy -->
+      <div class="panel p-3 text-center">
+        <p class="text-txt-muted mb-1">Energy</p>
+        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2535;">
+          <div class="h-full rounded" style="width:45%; background:#f0b429;"></div>
+        </div>
+        <p class="font-semibold" style="color:#f0b429;">NEUTRAL</p>
+        <p class="text-txt-muted text-xs mt-0.5">Supply Watch</p>
+      </div>
+
+      <!-- Healthcare -->
+      <div class="panel p-3 text-center">
+        <p class="text-txt-muted mb-1">Healthcare</p>
+        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2535;">
+          <div class="h-full rounded" style="width:55%; background:#7a8499;"></div>
+        </div>
+        <p class="text-txt-secondary font-semibold">NEUTRAL</p>
+        <p class="text-txt-muted text-xs mt-0.5">Defensive</p>
+      </div>
+
+      <!-- Utilities -->
+      <div class="panel p-3 text-center">
+        <p class="text-txt-muted mb-1">Utilities</p>
+        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2535;">
+          <div class="h-full rounded" style="width:30%; background:#ff4560;"></div>
+        </div>
+        <p class="text-bear font-semibold">UNDERWEIGHT</p>
+        <p class="text-txt-muted text-xs mt-0.5">Risk-Off</p>
+      </div>
+
+      <!-- Gold / Safe Havens -->
+      <div class="panel p-3 text-center">
+        <p class="text-txt-muted mb-1">Gold / Safe-Haven</p>
+        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2535;">
+          <div class="h-full rounded" style="width:68%; background:#f0b429;"></div>
+        </div>
+        <p class="font-semibold" style="color:#f0b429;">WATCH</p>
+        <p class="text-txt-muted text-xs mt-0.5">Demand intact</p>
+      </div>
+
+    </div>
+    <p class="text-xs text-txt-muted mt-3">Bar length = relative fund flow weight. Interpretation: Risk-On favours Tech/Financials; Risk-Off favours Utilities/Gold.</p>
+  </div><!-- /sector rotation -->
+
+</main><!-- /main -->
 
 <!-- ============================================================
-     9. FOOTER
-     ============================================================ -->
-<footer class="text-center text-text-muted text-xs py-6 border-t mt-6" style="border-color:#1e2535;">
+     FOOTER
+============================================================ -->
+<footer class="text-center text-xs text-txt-muted py-6 border-t border-border-dark mt-6">
   Educational use only. Not financial advice. Data: FRED, CFTC, ForexFactory. &copy; KofiFX Terminal
 </footer>
 
 <!-- ============================================================
-     JAVASCRIPT
-     ============================================================ -->
+     EMBEDDED JAVASCRIPT — all logic inline
+============================================================ -->
 <script>
-/* ---------------------------------------------------------------
-   CONSTANTS & HELPERS
---------------------------------------------------------------- */
-const FLAG_MAP = {
-  USD: '🇺🇸', EUR: '🇪🇺', GBP: '🇬🇧', JPY: '🇯🇵',
-  AUD: '🇦🇺', CAD: '🇨🇦', CHF: '🇨🇭', NZD: '🇳🇿',
-  CNY: '🇨🇳', RUB: '🇷🇺', MXN: '🇲🇽', KRW: '🇰🇷',
-  SGD: '🇸🇬', HKD: '🇭🇰', NOK: '🇳🇴', SEK: '🇸🇪',
+/* ================================================================
+   CONSTANTS & CONFIG
+================================================================ */
+
+// Currency flag map for calendar and toasts
+const CURRENCY_FLAGS = {
+  USD:'🇺🇸', EUR:'🇪🇺', GBP:'🇬🇧', JPY:'🇯🇵',
+  AUD:'🇦🇺', CAD:'🇨🇦', CHF:'🇨🇭', NZD:'🇳🇿',
+  CNY:'🇨🇳', MXN:'🇲🇽'
+};
+const flagFor = c => CURRENCY_FLAGS[c] || '🌐';
+
+// ----------------------------------------------------------------
+// Pair Focus context data — static reference object
+// ----------------------------------------------------------------
+const PAIR_CONTEXT = {
+  EURUSD: {
+    cot: 'EUR net long +29k · USD net positive from rate divergence',
+    session: 'LON / NY overlap',
+    bias: 'Cautiously bullish EUR — ECB holding while Fed may cut',
+    risk: 'US CPI surprises, Fed tone'
+  },
+  GBPUSD: {
+    cot: 'GBP net short −61k · crowded short, potential squeeze',
+    session: 'LON primary',
+    bias: 'Contrarian long setup possible on short squeeze',
+    risk: 'BOE tone, UK labour data'
+  },
+  AUDUSD: {
+    cot: 'AUD modest net long · commodity demand supportive',
+    session: 'TKY / LON open',
+    bias: 'Mild bullish bias, China data dependent',
+    risk: 'RBA dovish pivot, China PMI miss'
+  },
+  NZDUSD: {
+    cot: 'NZD neutral · RBNZ in cutting cycle',
+    session: 'TKY open',
+    bias: 'Bearish bias while RBNZ cuts',
+    risk: 'NZ CPI, dairy prices'
+  },
+  USDJPY: {
+    cot: 'JPY net short −115k · extreme stretch, reversal risk',
+    session: 'TKY primary, all sessions liquid',
+    bias: 'Long USD/JPY but risk of sharp BoJ-driven reversal',
+    risk: 'BoJ rate signal, US yields falling'
+  },
+  USDCAD: {
+    cot: 'CAD net short −69k · weakness persistent',
+    session: 'NY primary',
+    bias: 'Bullish USD/CAD while oil weak and BoC cuts',
+    risk: 'Oil price spike, Canadian jobs data'
+  },
+  USDCHF: {
+    cot: 'CHF mild long · safe-haven demand',
+    session: 'LON primary',
+    bias: 'Neutral — SNB keeps lid on CHF appreciation',
+    risk: 'SNB intervention, risk-off surge'
+  },
+  GBPJPY: {
+    cot: 'GBP short −61k vs JPY short −115k · volatile cross',
+    session: 'LON / TKY crossover',
+    bias: 'Range-bound with upside bias near-term',
+    risk: 'BoJ surprise, UK data miss'
+  },
+  AUDJPY: {
+    cot: 'Risk proxy pair · follows S&P sentiment',
+    session: 'TKY primary',
+    bias: 'Bullish while risk-on — watch equity sentiment',
+    risk: 'China slowdown, BoJ hike'
+  },
+  CADJPY: {
+    cot: 'CAD weak vs JPY weak · battle of the shorts',
+    session: 'NY / TKY',
+    bias: 'Directionless — requires catalyst',
+    risk: 'Oil shock, BoJ meeting'
+  },
+  EURJPY: {
+    cot: 'EUR modest long vs JPY extreme short',
+    session: 'LON / TKY overlap',
+    bias: 'Cautious long EUR/JPY while divergence persists',
+    risk: 'BoJ policy normalisation'
+  },
+  NZDJPY: {
+    cot: 'NZD neutral vs JPY short',
+    session: 'TKY',
+    bias: 'Short-term bullish while risk appetite holds',
+    risk: 'Risk-off event, BoJ hawkish shift'
+  },
+  CADCHF: {
+    cot: 'CAD bearish vs CHF mild safe-haven',
+    session: 'LON/NY',
+    bias: 'Bearish CAD/CHF while oil weak',
+    risk: 'Oil rally, Swiss SNB'
+  },
+  AUDCHF: {
+    cot: 'AUD modest long vs CHF safe-haven demand',
+    session: 'TKY/LON',
+    bias: 'Neutral to slightly bearish AUD/CHF',
+    risk: 'Global risk-off, China data'
+  },
+  AUDNZD: {
+    cot: 'AUD mild long vs NZD neutral',
+    session: 'TKY',
+    bias: 'Mild bullish AUD/NZD while RBA holds vs RBNZ cuts',
+    risk: 'RBA pivot, NZ inflation beat'
+  },
+  GBPNZD: {
+    cot: 'GBP net short −61k vs NZD neutral',
+    session: 'LON primary',
+    bias: 'Bearish GBP/NZD short-term given crowded GBP shorts',
+    risk: 'UK CPI, RBNZ dovish guidance'
+  },
+  XAUUSD: {
+    cot: 'GOLD net long +154k · macro safe-haven demand intact',
+    session: 'All sessions — spikes on US data',
+    bias: 'Bullish gold — real yields falling, central bank buying',
+    risk: 'USD surge on hot CPI, risk-on rally reducing safe haven'
+  }
 };
 
-function fmtNum(n, decimals=2) {
-  if (n === null || n === undefined || isNaN(n)) return '--';
-  return Number(n).toFixed(decimals);
-}
+// ----------------------------------------------------------------
+// COT data — hardcoded snapshot (currencies + commodities)
+// ----------------------------------------------------------------
+const COT_CURRENCIES = [
+  { label:'USD',  value: 38.2 },
+  { label:'EUR',  value: 29.1 },
+  { label:'JPY',  value:-115.3 },
+  { label:'GBP',  value: -61.4 },
+  { label:'AUD',  value:  12.8 },
+  { label:'CAD',  value: -69.1 },
+  { label:'CHF',  value:  8.5 },
+  { label:'NZD',  value:  -4.2 },
+];
+const COT_COMMODITIES = [
+  { label:'GOLD',   value: 154.1 },
+  { label:'SILVER', value:  42.3 },
+  { label:'WTI OIL',value: -18.5 },
+  { label:'NATGAS', value: 253.2 },
+  { label:'COPPER', value:  31.8 },
+  { label:'WHEAT',  value: -22.4 },
+];
 
-function colorClass(val) {
-  return val >= 0 ? '#00c97a' : '#ff4560';
-}
+/* ================================================================
+   SECTION 0 — CLOCK & SESSION PILLS
+================================================================ */
 
-function pad2(n) { return String(n).padStart(2,'0'); }
-
-/* ---------------------------------------------------------------
-   1. UTC CLOCK & SESSION PILLS
---------------------------------------------------------------- */
+/**
+ * Updates the UTC clock display and toggles session pill glow.
+ * TKY: 00–09, LON: 03–12, NY: 13–21 (UTC hours, inclusive start)
+ */
 function updateClock() {
   const now = new Date();
-  const h = now.getUTCHours(), m = now.getUTCMinutes(), s = now.getUTCSeconds();
-  document.getElementById('utc-clock').textContent =
-    `${pad2(h)}:${pad2(m)}:${pad2(s)} UTC`;
+  const h = now.getUTCHours();
+  const m = String(now.getUTCMinutes()).padStart(2,'0');
+  const s = String(now.getUTCSeconds()).padStart(2,'0');
+  document.getElementById('utc-clock').textContent = `${String(h).padStart(2,'0')}:${m}:${s} UTC`;
 
-  // Session activation
-  const pills = [
-    { id: 'pill-tokyo',  from: 0,  to: 9  },
-    { id: 'pill-london', from: 3,  to: 12 },
-    { id: 'pill-ny',     from: 13, to: 21 },
-  ];
-  pills.forEach(p => {
-    const el = document.getElementById(p.id);
-    const active = h >= p.from && h < p.to;
-    el.classList.toggle('active', active);
-  });
+  // Tokyo: 00-08 inclusive (session closes at 09), London: 03-11, NY: 13-21
+  const tky = (h >= 0 && h < 9);
+  const lon = (h >= 3 && h < 12);
+  const ny  = (h >= 13 && h < 21);
+
+  document.getElementById('pill-tky').classList.toggle('active', tky);
+  document.getElementById('pill-lon').classList.toggle('active', lon);
+  document.getElementById('pill-ny').classList.toggle('active', ny);
 }
 setInterval(updateClock, 1000);
 updateClock();
 
-/* ---------------------------------------------------------------
-   2. RORO GAUGE — animate confidence bar on load
---------------------------------------------------------------- */
-window.addEventListener('load', () => {
-  // Animate confidence bar
-  setTimeout(() => {
-    document.getElementById('conf-bar-fill').style.width = '87%';
-  }, 400);
-});
+/* ================================================================
+   SECTION 1 — BROKER / EXNESS PANEL
+================================================================ */
 
-/* ---------------------------------------------------------------
-   3. CROSS-ASSET TILES — fetch from /api/prices
---------------------------------------------------------------- */
-const CROSS_SYMBOLS = ['SPX500', 'USDJPY', 'XAUUSD', 'WTIUSD', 'VIX'];
+let brokerOpen = false; // collapsible state
+let metaPollingTimer = null; // positions polling interval
 
-async function fetchCrossAsset() {
+/** Toggle the broker panel open/close */
+function toggleBroker() {
+  brokerOpen = !brokerOpen;
+  const body = document.getElementById('broker-body');
+  const chevron = document.getElementById('broker-chevron');
+  body.classList.toggle('open', brokerOpen);
+  chevron.style.transform = brokerOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+/** Open the broker panel (called from Connect button) */
+function openBrokerPanel() {
+  if (!brokerOpen) toggleBroker();
+}
+
+/** Switch between MetaAPI and Demo tabs */
+function switchBrokerTab(tab) {
+  const isDemo = tab === 'demo';
+  document.getElementById('tab-meta').classList.toggle('active', !isDemo);
+  document.getElementById('tab-demo').classList.toggle('active', isDemo);
+  document.getElementById('panel-meta').classList.toggle('hidden', isDemo);
+  document.getElementById('panel-demo').classList.toggle('hidden', !isDemo);
+}
+
+/**
+ * Attempt MetaAPI connection.
+ * POSTs to /api/broker/connect with {token, accountId}.
+ * On success: fetches account info and starts position polling.
+ */
+async function metaConnect() {
+  const token     = document.getElementById('meta-token').value.trim();
+  const accountId = document.getElementById('meta-account-id').value.trim();
+
+  if (!token || !accountId) {
+    showMetaError('Please enter both MetaAPI Token and Account ID.');
+    return;
+  }
+
+  // Show spinner, hide error
+  document.getElementById('meta-spinner').classList.remove('hidden');
+  document.getElementById('meta-error').classList.add('hidden');
+  setMetaDot('connecting');
+
   try {
-    const symbols = CROSS_SYMBOLS.join(',');
-    const res = await fetch(`/api/prices?symbols=${symbols}`);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    CROSS_SYMBOLS.forEach(sym => {
-      const item = data[sym] || data[sym.toLowerCase()];
-      if (!item) return;
-      const priceEl = document.getElementById(`tile-${sym}`);
-      const chgEl   = document.getElementById(`tile-${sym}-chg`);
-      if (priceEl) priceEl.textContent = fmtNum(item.price, sym === 'VIX' ? 2 : 2);
-      if (chgEl) {
-        const pct = item.change_pct ?? item.changePct ?? 0;
-        chgEl.textContent = (pct >= 0 ? '+' : '') + fmtNum(pct, 2) + '%';
-        chgEl.style.color = colorClass(pct);
-      }
+    const res = await fetch('/api/broker/connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, accountId })
     });
-  } catch (e) {
-    // Graceful: leave tiles showing '--'
-    console.warn('Cross-asset fetch failed:', e.message);
-  }
-}
-fetchCrossAsset();
 
-/* ---------------------------------------------------------------
-   4. ECONOMIC CALENDAR
---------------------------------------------------------------- */
-const IMPACT_DOT = {
-  High:   '<span style="color:#ff4560;font-size:14px;">&#11044;</span>',
-  Medium: '<span style="color:#f0b429;font-size:14px;">&#11044;</span>',
-  Low:    '<span style="color:#4a5368;font-size:14px;">&#11044;</span>',
-};
+    document.getElementById('meta-spinner').classList.add('hidden');
 
-// Countdown from event time string (HH:MM) to now
-function buildCountdown(timeStr) {
-  // timeStr expected as "HH:MM" UTC
-  const now = new Date();
-  const [hh, mm] = (timeStr || '').split(':').map(Number);
-  if (isNaN(hh)) return '';
-  const eventMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hh, mm, 0);
-  const diffSec = Math.floor((eventMs - now.getTime()) / 1000);
-  if (diffSec < 0) return '<span style="color:#4a5368;">passed</span>';
-  const h = Math.floor(diffSec / 3600);
-  const m = Math.floor((diffSec % 3600) / 60);
-  const s = diffSec % 60;
-  const cls = diffSec < 300 ? 'countdown-near' : '';
-  return `<span class="${cls}">${h}h ${pad2(m)}m ${pad2(s)}s</span>`;
-}
-
-let calendarEvents = [];
-
-function renderCalendar() {
-  const container = document.getElementById('calendar-container');
-  const today = new Date();
-  const todayStr = `${today.getUTCFullYear()}-${pad2(today.getUTCMonth()+1)}-${pad2(today.getUTCDate())}`;
-
-  const eventsToday = calendarEvents.filter(ev => {
-    // ForexFactory date field may be "May 31, 2026" or ISO
-    if (!ev.date) return false;
-    try {
-      const d = new Date(ev.date);
-      const ds = `${d.getUTCFullYear()}-${pad2(d.getUTCMonth()+1)}-${pad2(d.getUTCDate())}`;
-      return ds === todayStr;
-    } catch { return false; }
-  });
-
-  if (eventsToday.length === 0) {
-    container.innerHTML = '<div class="text-text-muted text-sm py-4">No high-impact events today.</div>';
-    return;
-  }
-
-  let html = `
-  <table class="w-full text-sm">
-    <thead>
-      <tr style="border-bottom:1px solid #1e2535;">
-        <th class="text-left py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Time (UTC)</th>
-        <th class="text-left py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Ccy</th>
-        <th class="text-left py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Event</th>
-        <th class="text-center py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Impact</th>
-        <th class="text-right py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Forecast</th>
-        <th class="text-right py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Previous</th>
-        <th class="text-right py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Countdown</th>
-      </tr>
-    </thead>
-    <tbody id="cal-body">`;
-
-  eventsToday.forEach((ev, i) => {
-    const flag = FLAG_MAP[ev.currency] || '';
-    const dot  = IMPACT_DOT[ev.impact] || IMPACT_DOT.Low;
-    html += `<tr style="border-bottom:1px solid #1a1f2e;" class="cal-row" data-time="${ev.time || ''}">
-      <td class="py-2 px-2 font-mono text-text-secondary">${ev.time || '--'}</td>
-      <td class="py-2 px-2">${flag} <span class="text-text-secondary">${ev.currency || ''}</span></td>
-      <td class="py-2 px-2 text-text-primary">${ev.title || ev.name || ''}</td>
-      <td class="py-2 px-2 text-center">${dot}</td>
-      <td class="py-2 px-2 text-right font-mono text-text-secondary">${ev.forecast || '--'}</td>
-      <td class="py-2 px-2 text-right font-mono text-text-secondary">${ev.previous || '--'}</td>
-      <td class="py-2 px-2 text-right font-mono countdown-cell" data-time="${ev.time || ''}">${buildCountdown(ev.time)}</td>
-    </tr>`;
-  });
-
-  html += '</tbody></table>';
-  container.innerHTML = html;
-}
-
-function updateCountdowns() {
-  document.querySelectorAll('.countdown-cell').forEach(cell => {
-    const t = cell.getAttribute('data-time');
-    cell.innerHTML = buildCountdown(t);
-  });
-}
-
-async function fetchCalendar() {
-  try {
-    const res = await fetch('/api/calendar');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    calendarEvents = await res.json();
-  } catch (e) {
-    console.warn('Calendar fetch failed:', e.message);
-    calendarEvents = [];
-  }
-  renderCalendar();
-}
-
-fetchCalendar();
-// Update countdowns every second
-setInterval(updateCountdowns, 1000);
-
-/* ---------------------------------------------------------------
-   5. COT POSITIONING — render bar charts
---------------------------------------------------------------- */
-const COT_CURRENCIES = [
-  { label: 'AUD', value:  68000 },
-  { label: 'MXN', value:  58000 },
-  { label: 'EUR', value:  29000 },
-  { label: 'NZD', value: -34000 },
-  { label: 'CHF', value: -35000 },
-  { label: 'GBP', value: -61000 },
-  { label: 'CAD', value: -69000 },
-  { label: 'JPY', value: -115000 },
-];
-
-const COT_COMMODITIES = [
-  { label: 'NATGAS',   value:  253000 },
-  { label: 'GOLD',     value:  154000 },
-  { label: 'COPPER',   value:   73000 },
-  { label: 'SILVER',   value:   22000 },
-  { label: 'PLATINUM', value:   18000 },
-  { label: 'BITCOIN',  value:    2000 },
-  { label: 'USD',      value:     850 },
-  { label: 'CRUDE',    value:  -27000 },
-];
-
-function renderCOT(data, containerId) {
-  const maxAbs = Math.max(...data.map(d => Math.abs(d.value)));
-  const container = document.getElementById(containerId);
-  let html = '';
-  data.forEach(d => {
-    const pct = (Math.abs(d.value) / maxAbs) * 100;
-    const col = d.value >= 0 ? '#00c97a' : '#ff4560';
-    const label = d.value >= 0
-      ? `+${(d.value/1000).toFixed(0)}k`
-      : `${(d.value/1000).toFixed(0)}k`;
-    html += `<div class="cot-row">
-      <div class="cot-label">${d.label}</div>
-      <div class="cot-bar-track">
-        <div class="cot-bar-fill" style="width:${pct.toFixed(1)}%;background:${col};"></div>
-      </div>
-      <div class="cot-value" style="color:${col};">${label}</div>
-    </div>`;
-  });
-  container.innerHTML = html;
-}
-
-renderCOT(COT_CURRENCIES, 'cot-currencies');
-renderCOT(COT_COMMODITIES, 'cot-commodities');
-
-/* ---------------------------------------------------------------
-   6. MULTI-PAIR SCANNER — poll /api/prices every 5s
---------------------------------------------------------------- */
-const SCANNER_SYMBOLS = [
-  'EURUSD','GBPUSD','AUDUSD','USDJPY','USDCAD','USDCHF',
-  'GBPJPY','AUDJPY','CADJPY','NZDUSD','XAUUSD','GBPNZD','AUDCHF','CADCHF'
-];
-
-// Track previous prices for tick direction
-const prevPrices = {};
-
-function renderScanner(data) {
-  const tbody = document.getElementById('scanner-body');
-  if (!data || typeof data !== 'object') {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-text-muted text-sm py-4 text-center">Price data unavailable.</td></tr>';
-    return;
-  }
-
-  let html = '';
-  SCANNER_SYMBOLS.forEach(sym => {
-    const item = data[sym] || data[sym.toLowerCase()];
-    if (!item) {
-      html += `<tr>
-        <td class="font-mono text-text-primary">${sym}</td>
-        <td colspan="5" class="text-text-muted text-right">unavailable</td>
-      </tr>`;
+    if (!res.ok) {
+      const msg = await res.text().catch(() => 'Connection failed.');
+      showMetaError(`Error ${res.status}: ${msg}`);
+      setMetaDot('error');
       return;
     }
 
-    const price   = item.price ?? item.bid ?? null;
-    const change  = item.change ?? item.change_24h ?? 0;
-    const changePct = item.change_pct ?? item.changePct ?? 0;
-    const isBull  = changePct >= 0;
-    const priceCol = isBull ? '#00c97a' : '#ff4560';
+    // Success — fetch account data
+    setMetaDot('connected');
+    setBrokerBadge('CONNECTED', '#00c97a22', '#00c97a');
+    await fetchMetaAccount();
+    startPositionPolling();
 
-    // Tick direction vs previous price
-    let tick = '&#9644;'; // flat
-    let tickCol = '#7a8499';
-    if (prevPrices[sym] !== undefined && price !== null) {
-      if (price > prevPrices[sym]) { tick = '&#9650;'; tickCol = '#00c97a'; }
-      else if (price < prevPrices[sym]) { tick = '&#9660;'; tickCol = '#ff4560'; }
-    }
-    if (price !== null) prevPrices[sym] = price;
-
-    // Decimal places: JPY pairs 3, XAU 2, others 5
-    let dec = 5;
-    if (sym.includes('JPY')) dec = 3;
-    if (sym.includes('XAU')) dec = 2;
-
-    const dirBadge = isBull
-      ? `<span style="color:#00c97a;background:#00c97a18;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">&#9650; BULL</span>`
-      : `<span style="color:#ff4560;background:#ff456018;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">&#9660; BEAR</span>`;
-
-    html += `<tr>
-      <td class="font-mono font-semibold text-text-primary">${sym}</td>
-      <td class="text-right font-mono" style="color:${priceCol};">${fmtNum(price, dec)}</td>
-      <td class="text-right font-mono" style="color:${priceCol};">${change >= 0 ? '+' : ''}${fmtNum(change, dec)}</td>
-      <td class="text-right font-mono" style="color:${priceCol};">${changePct >= 0 ? '+' : ''}${fmtNum(changePct, 2)}%</td>
-      <td class="text-center">${dirBadge}</td>
-      <td class="text-center font-mono" style="color:${tickCol};font-size:14px;">${tick}</td>
-    </tr>`;
-  });
-
-  tbody.innerHTML = html;
-}
-
-async function fetchScanner() {
-  try {
-    const symbols = SCANNER_SYMBOLS.join(',');
-    const res = await fetch(`/api/prices?symbols=${symbols}`);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    renderScanner(data);
-  } catch (e) {
-    console.warn('Scanner fetch failed:', e.message);
-    renderScanner(null);
+  } catch (err) {
+    document.getElementById('meta-spinner').classList.add('hidden');
+    showMetaError(`Network error: ${err.message}`);
+    setMetaDot('error');
+    setBrokerBadge('ERROR', '#ff456022', '#ff4560');
   }
 }
 
+/** Fetch MetaAPI account summary cards */
+async function fetchMetaAccount() {
+  try {
+    const res = await fetch('/api/broker/account');
+    if (!res.ok) throw new Error(`Status ${res.status}`);
+    const d = await res.json();
+    renderMetaCards(d);
+    document.getElementById('meta-account-cards').classList.remove('hidden');
+  } catch (err) {
+    showMetaError(`Account fetch failed: ${err.message}`);
+  }
+}
+
+/** Render the 6-card account summary grid */
+function renderMetaCards(d) {
+  const pnl = (d.dailyPnl || 0);
+  const pnlStr = pnl >= 0 ? `▲$${pnl.toFixed(2)}` : `▼$${Math.abs(pnl).toFixed(2)}`;
+  const pnlColor = pnl >= 0 ? '#00c97a' : '#ff4560';
+  const fields = [
+    ['Balance',      `$${(d.balance||0).toFixed(2)}`    ],
+    ['Equity',       `$${(d.equity||0).toFixed(2)}`     ],
+    ['Margin',       `$${(d.margin||0).toFixed(2)}`     ],
+    ['Free Margin',  `$${(d.freeMargin||0).toFixed(2)}` ],
+    ['Margin Level', `${(d.marginLevel||0).toFixed(1)}%`],
+    ['Daily P&L',    pnlStr, pnlColor                   ],
+  ];
+  const grid = document.getElementById('meta-cards-grid');
+  grid.innerHTML = fields.map(([label, val, color]) =>
+    `<div class="panel p-2 text-center">
+      <p class="text-xs text-txt-muted">${label}</p>
+      <p class="font-bold text-sm" style="${color ? `color:${color};` : ''}">${val}</p>
+    </div>`
+  ).join('');
+}
+
+/** Fetch and render open positions table */
+async function fetchMetaPositions() {
+  try {
+    const res = await fetch('/api/broker/positions');
+    if (!res.ok) throw new Error(`Status ${res.status}`);
+    const positions = await res.json();
+    renderPositions(positions);
+  } catch (err) {
+    // Silent fail on poll — don't disrupt UI
+  }
+}
+
+function renderPositions(positions) {
+  const tbody = document.getElementById('meta-positions-body');
+  if (!positions || positions.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="py-3 text-center text-txt-muted">No open positions</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = positions.map(p => {
+    const pnl = p.profit || 0;
+    const pnlColor = pnl >= 0 ? '#00c97a' : '#ff4560';
+    const pnlStr  = pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`;
+    const typeColor = p.type === 'BUY' ? '#00c97a' : '#ff4560';
+    return `<tr class="border-b border-border-dark/40">
+      <td class="py-1 pr-3 font-mono font-semibold">${p.symbol || '--'}</td>
+      <td class="pr-3 font-semibold" style="color:${typeColor};">${p.type || '--'}</td>
+      <td class="text-right pr-3">${p.volume || '--'}</td>
+      <td class="text-right pr-3 font-mono">${p.openPrice || '--'}</td>
+      <td class="text-right pr-3 font-mono">${p.currentPrice || '--'}</td>
+      <td class="text-right font-semibold" style="color:${pnlColor};">${pnlStr}</td>
+    </tr>`;
+  }).join('');
+}
+
+/** Start polling positions every 10 seconds */
+function startPositionPolling() {
+  fetchMetaPositions(); // immediate
+  if (metaPollingTimer) clearInterval(metaPollingTimer);
+  metaPollingTimer = setInterval(fetchMetaPositions, 10000);
+}
+
+/** Helper: set connection status dot + text */
+function setMetaDot(state) {
+  const dot = document.getElementById('meta-status-dot');
+  const txt = document.getElementById('meta-status-txt');
+  const states = {
+    connecting: ['#f0b429', 'Connecting…'],
+    connected:  ['#00c97a', 'Connected'],
+    error:      ['#ff4560', 'Connection failed'],
+  };
+  const [color, label] = states[state] || ['#4a5368', 'Not connected'];
+  dot.style.background = color;
+  txt.textContent = label;
+  txt.style.color = color;
+}
+
+/** Helper: update top broker status badge */
+function setBrokerBadge(text, bg, color) {
+  const badge = document.getElementById('broker-status-badge');
+  badge.textContent = text;
+  badge.style.background = bg;
+  badge.style.color = color;
+}
+
+/** Helper: show MetaAPI error message */
+function showMetaError(msg) {
+  const el = document.getElementById('meta-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+/* ================================================================
+   SECTION 2 — RORO GAUGE ANIMATION
+================================================================ */
+
+/**
+ * Animate the SVG arc gauge on page load.
+ * Score +11 on -100 to +100 range.
+ * Arc total length ≈ 282.74 (π * 90).
+ * Map score to dashoffset: score=−100 → full offset (hidden),
+ * score=+100 → 0 (full arc). So offset = (1 - (score+100)/200) * 282.74.
+ */
+(function animateGauge() {
+  const score = 11;
+  const totalLen = 282.74;
+  const fraction = (score + 100) / 200; // 0..1
+  const targetOffset = totalLen * (1 - fraction);
+  const arc = document.getElementById('gauge-arc');
+  // Trigger transition via requestAnimationFrame after paint
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      arc.style.strokeDashoffset = targetOffset.toFixed(2);
+    });
+  });
+})();
+
+/* ================================================================
+   SECTION 2 — PAIR FOCUS CONTEXT
+================================================================ */
+
+/** Populate the pair context card when a pair is selected from the dropdown */
+function updatePairContext() {
+  const pair = document.getElementById('pair-focus-select').value;
+  const card = document.getElementById('pair-context-card');
+  if (!pair || !PAIR_CONTEXT[pair]) {
+    card.style.display = 'none';
+    return;
+  }
+  const ctx = PAIR_CONTEXT[pair];
+  document.getElementById('ctx-cot').textContent     = ctx.cot;
+  document.getElementById('ctx-session').textContent = ctx.session;
+  document.getElementById('ctx-bias').textContent    = ctx.bias;
+  document.getElementById('ctx-risk').textContent    = ctx.risk;
+  // Animate in
+  card.style.display = 'block';
+  card.classList.add('hidden-anim');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => card.classList.remove('hidden-anim'));
+  });
+}
+
+/* ================================================================
+   SECTION 2 — CONFIDENCE BAR ANIMATION
+================================================================ */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('conf-bar').style.width = '87%';
+  }, 400);
+});
+
+/* ================================================================
+   SECTION 2 — RORO CROSS-ASSET TILES (live prices)
+================================================================ */
+
+/** Fetch cross-asset tile prices from API and update DOM */
+async function fetchRoroTiles() {
+  try {
+    const res = await fetch('/api/prices?symbols=SP500,USDJPY,XAUUSD,USOIL');
+    if (!res.ok) throw new Error('Non-OK');
+    const data = await res.json();
+    const items = Array.isArray(data) ? data : (data.prices || data.data || []);
+    items.forEach(item => {
+      const sym = item.symbol;
+      const priceEl = document.getElementById(`tile-${sym}-price`);
+      const chgEl   = document.getElementById(`tile-${sym}-chg`);
+      if (!priceEl || !chgEl) return;
+      const chgPct = parseFloat(item.change_pct || item.changePct || 0);
+      priceEl.textContent = formatPrice(sym, item.price);
+      chgEl.textContent   = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
+      chgEl.style.color   = chgPct >= 0 ? '#00c97a' : '#ff4560';
+    });
+  } catch (_) {
+    // Gracefully leave tiles as '--' on error
+  }
+}
+
+/** Format price based on symbol type */
+function formatPrice(sym, price) {
+  if (!price) return '--';
+  const p = parseFloat(price);
+  if (sym === 'SP500') return p.toFixed(0);
+  if (sym === 'XAUUSD') return p.toFixed(2);
+  if (sym === 'USOIL') return p.toFixed(2);
+  return p.toFixed(3);
+}
+
+fetchRoroTiles();
+setInterval(fetchRoroTiles, 30000);
+
+/* ================================================================
+   SECTION 3 — NOTIFICATION PERMISSION BANNER
+================================================================ */
+
+/** Check notification permission on load and show banner if needed */
+function checkNotifPermission() {
+  if (typeof Notification === 'undefined') return; // API not available
+  if (Notification.permission !== 'granted') {
+    document.getElementById('notif-banner').classList.remove('hidden');
+  }
+}
+checkNotifPermission();
+
+/** Request notification permission when user clicks Enable */
+function requestNotifPermission() {
+  if (typeof Notification === 'undefined') return;
+  Notification.requestPermission().then(perm => {
+    if (perm === 'granted') {
+      document.getElementById('notif-banner').classList.add('hidden');
+    }
+  });
+}
+
+/* ================================================================
+   SECTION 3 — ECONOMIC CALENDAR
+================================================================ */
+
+let calendarEvents = []; // loaded calendar events
+const notifFired = new Set(); // track which notification timeouts are set
+
+/**
+ * Convert an ISO datetime string to UTC milliseconds.
+ * Handles offsets like "2026-05-30T12:30:00-04:00" correctly.
+ */
+function toUTCMs(isoStr) {
+  return new Date(isoStr).getTime();
+}
+
+/** Format UTC ms to HH:MM string (always UTC/GMT) */
+function msToHHMM(ms) {
+  const d = new Date(ms);
+  return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
+}
+
+/** Get today's date string in UTC (YYYY-MM-DD) */
+function todayUTCStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Fetch calendar from API, filter to today UTC, render */
+async function fetchCalendar() {
+  // Show today's date label
+  const today = todayUTCStr();
+  document.getElementById('cal-date-label').textContent = today + ' GMT';
+
+  try {
+    const res = await fetch('/api/calendar');
+    if (!res.ok) throw new Error(`Status ${res.status}`);
+    const raw = await res.json();
+    const events = Array.isArray(raw) ? raw : (raw.events || raw.data || []);
+
+    // Filter to today UTC and sort ascending by time
+    calendarEvents = events
+      .filter(ev => {
+        const ms = toUTCMs(ev.date || ev.datetime || ev.time || '');
+        if (!ms) return false;
+        return new Date(ms).toISOString().slice(0,10) === today;
+      })
+      .sort((a,b) => toUTCMs(a.date||a.datetime||a.time||'') - toUTCMs(b.date||b.datetime||b.time||''));
+
+    renderCalendar();
+    scheduleCalendarNotifications();
+
+  } catch (_) {
+    document.getElementById('cal-body').innerHTML =
+      `<tr><td colspan="7" class="py-4 text-center text-txt-muted">Calendar unavailable — could not load data.</td></tr>`;
+  }
+}
+
+/** Render the calendar table rows (called on load and each second for countdown) */
+function renderCalendar() {
+  const tbody = document.getElementById('cal-body');
+  if (!calendarEvents.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-txt-muted">No events today.</td></tr>`;
+    return;
+  }
+  const nowMs = Date.now();
+  tbody.innerHTML = calendarEvents.map(ev => {
+    const evMs   = toUTCMs(ev.date || ev.datetime || ev.time || '');
+    const ccy    = (ev.currency || ev.country || '').toUpperCase();
+    const flag   = flagFor(ccy);
+    const impact = (ev.impact || ev.importance || 'low').toLowerCase();
+    const dotColor = impact === 'high' ? '#ff4560' : impact === 'medium' ? '#f0b429' : '#7a8499';
+    const impactDot = `<span style="color:${dotColor}; font-size:16px; line-height:1;">●</span>`;
+    const diffMs = evMs - nowMs;
+    let countdown = '';
+    let cdClass   = '';
+    if (diffMs > 0) {
+      const totalSec = Math.floor(diffMs / 1000);
+      const hrs = Math.floor(totalSec / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+      if (totalSec < 60) {
+        countdown = `in ${secs}s`;
+        cdClass = 'flash-red';
+      } else if (totalSec < 1800) {
+        countdown = `in ${mins}m ${secs}s`;
+        cdClass = 'text-bear';
+      } else if (hrs > 0) {
+        countdown = `in ${hrs}h ${mins}m`;
+        cdClass = 'text-txt-secondary';
+      } else {
+        countdown = `in ${mins}m`;
+        cdClass = totalSec < 1800 ? 'text-bear' : 'text-txt-secondary';
+      }
+    } else {
+      const agoMin = Math.floor(Math.abs(diffMs) / 60000);
+      countdown = `${agoMin}m ago`;
+      cdClass = 'text-txt-muted';
+    }
+    return `<tr class="cal-row border-b border-border-dark/30">
+      <td class="py-1.5 pr-3 font-mono text-txt-secondary">${evMs ? msToHHMM(evMs) : '--'}</td>
+      <td class="pr-3">${flag} <span class="text-txt-muted">${ccy}</span></td>
+      <td class="pr-3">${impactDot}</td>
+      <td class="pr-3 text-txt-primary">${ev.event || ev.name || ev.title || '--'}</td>
+      <td class="text-right pr-3 text-txt-secondary font-mono">${ev.forecast ?? '—'}</td>
+      <td class="text-right pr-3 text-txt-secondary font-mono">${ev.previous ?? '—'}</td>
+      <td class="text-right font-mono ${cdClass}">${countdown}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Update calendar countdowns every second
+setInterval(() => { if (calendarEvents.length) renderCalendar(); }, 1000);
+
+/**
+ * Schedule browser notifications and in-page toasts for HIGH-impact events.
+ * Fires at T-30min, T-5min, T-1min.
+ */
+function scheduleCalendarNotifications() {
+  const nowMs = Date.now();
+  calendarEvents.forEach(ev => {
+    const impact = (ev.impact || ev.importance || '').toLowerCase();
+    if (impact !== 'high') return;
+    const evMs = toUTCMs(ev.date || ev.datetime || ev.time || '');
+    if (!evMs || evMs <= nowMs) return;
+    const ccy    = (ev.currency || ev.country || '').toUpperCase();
+    const name   = ev.event || ev.name || ev.title || 'Event';
+    [30*60*1000, 5*60*1000, 60*1000].forEach(offset => {
+      const fireAt = evMs - offset;
+      const delay  = fireAt - nowMs;
+      if (delay <= 0) return;
+      const key = `${name}_${offset}`;
+      if (notifFired.has(key)) return;
+      notifFired.add(key);
+      setTimeout(() => {
+        const minsLeft = Math.round(offset / 60000);
+        const label = minsLeft < 1 ? 'NOW' : `in ${minsLeft}m`;
+        // Browser notification
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          new Notification(`${flagFor(ccy)} ${ccy}: ${name}`, {
+            body: `High-impact event ${label}`,
+            tag: key,
+          });
+        }
+        // In-page toast
+        showToast(ccy, name, label, 'high');
+      }, delay);
+    });
+  });
+}
+
+fetchCalendar();
+
+/* ================================================================
+   SECTION 5 — COT BAR CHARTS
+================================================================ */
+
+/**
+ * Render a list of COT bars into a container element.
+ * Max absolute value determines bar width scaling.
+ */
+function renderCOT(containerId, data) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const maxVal = Math.max(...data.map(d => Math.abs(d.value)));
+  container.innerHTML = data.map(d => {
+    const isPos  = d.value >= 0;
+    const pct    = (Math.abs(d.value) / maxVal * 100).toFixed(1);
+    const color  = isPos ? '#00c97a' : '#ff4560';
+    const label  = (isPos ? '+' : '') + d.value.toFixed(1) + 'k';
+    return `<div class="flex items-center gap-3 text-xs">
+      <span class="w-16 shrink-0 text-txt-secondary text-right">${d.label}</span>
+      <div class="flex-1 cot-bar-bg">
+        <div class="cot-bar-fill" style="width:${pct}%; background:${color};"></div>
+      </div>
+      <span class="w-14 text-right font-mono" style="color:${color};">${label}</span>
+    </div>`;
+  }).join('');
+}
+
+renderCOT('cot-currencies', COT_CURRENCIES);
+renderCOT('cot-commodities', COT_COMMODITIES);
+
+/* ================================================================
+   SECTION 6 — MULTI-PAIR SCANNER
+================================================================ */
+
+// All symbols to scan
+const SCANNER_SYMBOLS = [
+  'EURUSD','GBPUSD','AUDUSD','NZDUSD','USDJPY','USDCAD','USDCHF',
+  'EURJPY','GBPJPY','AUDJPY','CADJPY','CHFJPY','NZDJPY',
+  'EURGBP','EURCAD','EURCHF','EURAUD','EURNZD',
+  'GBPCAD','GBPCHF','GBPAUD','GBPNZD',
+  'AUDCAD','AUDCHF','AUDNZD','CADCHF','NZDCAD','NZDCHF',
+  'XAUUSD'
+];
+
+let scannerData = [];        // current price data array
+let scannerSortKey = null;   // current sort column
+let scannerSortDir = 1;      // 1 = asc, -1 = desc
+
+/** Fetch all scanner prices and refresh table */
+async function fetchScanner() {
+  const symbolList = SCANNER_SYMBOLS.join(',');
+  try {
+    const res = await fetch(`/api/prices?symbols=${symbolList}`);
+    if (!res.ok) throw new Error('Non-OK');
+    const raw = await res.json();
+    const items = Array.isArray(raw) ? raw : (raw.prices || raw.data || []);
+
+    // Build a lookup by symbol; for symbols with no data, fill placeholder
+    const bySymbol = {};
+    items.forEach(item => { if (item.symbol) bySymbol[item.symbol] = item; });
+
+    scannerData = SCANNER_SYMBOLS.map(sym => {
+      const d = bySymbol[sym];
+      if (!d) return { symbol: sym, price: null, change: null, changePct: null, direction: null, tick: null };
+      const chg    = parseFloat(d.change    || d.price_change  || 0);
+      const chgPct = parseFloat(d.change_pct|| d.changePct     || 0);
+      return {
+        symbol:    sym,
+        price:     parseFloat(d.price || 0),
+        change:    chg,
+        changePct: chgPct,
+        direction: chg >= 0 ? 'BULL' : 'BEAR',
+        tick:      d.tick || (chg > 0 ? 'up' : chg < 0 ? 'down' : 'flat'),
+      };
+    });
+
+    renderScannerTable();
+  } catch (_) {
+    // If fetch fails, show unavailable placeholders gracefully
+    if (!scannerData.length) {
+      scannerData = SCANNER_SYMBOLS.map(sym => ({
+        symbol: sym, price: null, change: null, changePct: null, direction: null, tick: null
+      }));
+      renderScannerTable();
+    }
+  }
+}
+
+/** Render (or re-render) the scanner table, applying search filter and current sort */
+function renderScannerTable() {
+  const filter  = (document.getElementById('scanner-search').value || '').toUpperCase();
+  const tbody   = document.getElementById('scanner-body');
+
+  let rows = scannerData.filter(d => !filter || d.symbol.includes(filter));
+
+  // Apply sort if a column is active
+  if (scannerSortKey) {
+    rows = [...rows].sort((a, b) => {
+      const av = a[scannerSortKey] ?? -Infinity;
+      const bv = b[scannerSortKey] ?? -Infinity;
+      if (typeof av === 'string') return scannerSortDir * av.localeCompare(bv);
+      return scannerSortDir * (av - bv);
+    });
+  }
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="py-3 text-center text-txt-muted">No results.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(d => {
+    const isPos   = d.changePct >= 0;
+    const rowClass = d.price == null ? '' : (isPos ? 'bull-row' : 'bear-row');
+    const priceStr = d.price  != null ? formatScannerPrice(d.symbol, d.price) : '<span class="text-txt-muted">—</span>';
+    const chgStr   = d.change != null
+      ? `<span style="color:${isPos?'#00c97a':'#ff4560'};">${isPos?'+':''}${d.change.toFixed(5)}</span>`
+      : '<span class="text-txt-muted">—</span>';
+    const chgPctStr = d.changePct != null
+      ? `<span style="color:${isPos?'#00c97a':'#ff4560'};">${isPos?'+':''}${d.changePct.toFixed(2)}%</span>`
+      : '<span class="text-txt-muted">—</span>';
+    const dirStr   = d.direction != null
+      ? `<span style="color:${d.direction==='BULL'?'#00c97a':'#ff4560'};">${d.direction==='BULL'?'▲':'▼'} ${d.direction}</span>`
+      : '<span class="text-txt-muted">—</span>';
+    const tickIcon = d.tick === 'up' ? '↑' : d.tick === 'down' ? '↓' : '—';
+    const tickColor = d.tick === 'up' ? '#00c97a' : d.tick === 'down' ? '#ff4560' : '#7a8499';
+    return `<tr class="scanner-row ${rowClass} border-b border-border-dark/30">
+      <td class="py-1.5 pr-3 font-mono font-semibold text-txt-primary">${d.symbol}</td>
+      <td class="text-right pr-3 font-mono">${priceStr}</td>
+      <td class="text-right pr-3 font-mono">${chgStr}</td>
+      <td class="text-right pr-3 font-mono">${chgPctStr}</td>
+      <td class="text-right pr-3 text-xs font-semibold">${dirStr}</td>
+      <td class="text-right font-mono" style="color:${tickColor};">${tickIcon}</td>
+    </tr>`;
+  }).join('');
+}
+
+/** Format scanner price to correct decimal places */
+function formatScannerPrice(sym, price) {
+  if (!price) return '--';
+  // Yen pairs: 3 decimals; gold: 2; others: 5
+  if (sym.includes('JPY')) return price.toFixed(3);
+  if (sym === 'XAUUSD')    return price.toFixed(2);
+  return price.toFixed(5);
+}
+
+/**
+ * Handle column header sort click.
+ * Toggles direction if same column, resets to asc for new column.
+ */
+function sortScanner(key) {
+  if (scannerSortKey === key) {
+    scannerSortDir *= -1;
+  } else {
+    scannerSortKey = key;
+    scannerSortDir = 1;
+  }
+  // Update header arrow classes
+  document.querySelectorAll('#scanner-table th').forEach(th => {
+    th.className = th.className.replace(/sort-asc|sort-desc/g, '').trim();
+    if (!th.className.includes('sort-arrow')) th.classList.add('sort-arrow');
+  });
+  // Find the clicked header by data or position mapping
+  const colMap = ['symbol','price','change','changePct','direction'];
+  const idx = colMap.indexOf(key);
+  if (idx >= 0) {
+    const headers = document.querySelectorAll('#scanner-table thead th');
+    if (headers[idx]) {
+      headers[idx].classList.remove('sort-arrow');
+      headers[idx].classList.add(scannerSortDir === 1 ? 'sort-asc' : 'sort-desc');
+    }
+  }
+  renderScannerTable();
+}
+
+// Initial fetch + poll every 5 seconds
 fetchScanner();
 setInterval(fetchScanner, 5000);
 
-/* ---------------------------------------------------------------
-   7. STRETCHED POSITIONING
---------------------------------------------------------------- */
-const STRETCHED = [
-  { label: 'NATGAS',   dir: 'long',  pct:  83, net:  253000 },
-  { label: 'CHF',      dir: 'short', pct: -71, net:  -35000 },
-  { label: 'GOLD',     dir: 'long',  pct:  62, net:  154000 },
-  { label: 'NZD',      dir: 'short', pct: -59, net:  -34000 },
-  { label: 'COPPER',   dir: 'long',  pct:  53, net:   73000 },
-  { label: 'PLATINUM', dir: 'long',  pct:  51, net:   18000 },
-  { label: 'SILVER',   dir: 'long',  pct:  51, net:   22000 },
-  { label: 'MXN',      dir: 'long',  pct:  47, net:   58000 },
-];
+/* ================================================================
+   SECTION 9 — TOAST NOTIFICATION SYSTEM
+================================================================ */
 
-(function renderStretched() {
-  const container = document.getElementById('stretched-list');
-  let html = '';
-  STRETCHED.forEach(s => {
-    const isLong = s.dir === 'long';
-    const badgeCol = isLong ? '#00c97a' : '#ff4560';
-    const badgeBg  = isLong ? '#00c97a18' : '#ff456018';
-    const badgeText = isLong ? `long +${s.pct}%` : `short ${s.pct}%`;
-    const netLabel = s.net >= 0
-      ? `+${(s.net/1000).toFixed(0)}k contracts`
-      : `${(s.net/1000).toFixed(0)}k contracts`;
-    html += `<div class="flex items-center gap-3">
-      <span class="font-mono font-semibold text-text-primary w-20">${s.label}</span>
-      <span style="color:${badgeCol};background:${badgeBg};padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;">${badgeText}</span>
-      <span class="text-text-muted text-xs font-mono">${netLabel}</span>
-    </div>`;
-  });
-  container.innerHTML = html;
-})();
+let toastCount = 0;
+const MAX_TOASTS = 4;
 
-/* ---------------------------------------------------------------
-   7b. WEEK-OVER-WEEK MOVERS
---------------------------------------------------------------- */
-const WOW_CURRENCIES = [
-  { label:'CAD', dir:'down', change:-37651, pct:121 },
-  { label:'AUD', dir:'down', change:-25489, pct:30  },
-  { label:'JPY', dir:'down', change:-20762, pct:22  },
-  { label:'NZD', dir:'up',   change: +6434, pct:16  },
-  { label:'GOLD',dir:'down', change: -5573, pct:3   },
-  { label:'MXN', dir:'down', change: -4095, pct:7   },
-  { label:'EUR', dir:'down', change: -4087, pct:12  },
-  { label:'GBP', dir:'up',   change: +2909, pct:5   },
-];
+/**
+ * Display an in-page toast notification.
+ * @param {string} currency  - e.g. "USD"
+ * @param {string} eventName - event title
+ * @param {string} countdown - e.g. "in 30m" or "NOW"
+ * @param {string} impact    - "high" | "medium"
+ */
+function showToast(currency, eventName, countdown, impact = 'high') {
+  const container = document.getElementById('toast-container');
+  // Remove oldest toast if at max
+  while (container.children.length >= MAX_TOASTS) {
+    dismissToast(container.lastElementChild);
+  }
+  const flag = flagFor(currency);
+  const borderClass = impact === 'high' ? 'toast-high' : 'toast-medium';
+  const timeColor   = impact === 'high' ? '#ff4560' : '#f0b429';
 
-const WOW_COMMODITIES = [
-  { label:'CRUDE',    dir:'up',   change: +4019, pct:11.5 },
-  { label:'GOLD',     dir:'up',   change: +3906, pct:4.2  },
-  { label:'COPPER',   dir:'down', change: -3688, pct:5.0  },
-  { label:'SILVER',   dir:'down', change: -1509, pct:13   },
-  { label:'USD',      dir:'down', change:  -814, pct:6.9  },
-  { label:'PLATINUM', dir:'down', change:  -509, pct:3.8  },
-  { label:'BITCOIN',  dir:'up',   change:  +327, pct:3.6  },
-  { label:'NATGAS',   dir:'flat', change:     0, pct:0    },
-];
+  const toast = document.createElement('div');
+  toast.className = `toast ${borderClass}`;
+  toast.innerHTML = `
+    <div class="flex items-start justify-between gap-3">
+      <div class="text-xs leading-snug">
+        <p class="font-semibold text-txt-primary mb-0.5">${flag} ${currency} — ${eventName}</p>
+        <p style="color:${timeColor};" class="font-mono font-bold">${countdown}</p>
+      </div>
+      <button onclick="dismissToast(this.parentElement.parentElement)" class="text-txt-muted hover:text-txt-primary text-sm leading-none shrink-0">✕</button>
+    </div>
+  `;
 
-function renderWoW(data, containerId) {
-  const container = document.getElementById(containerId);
-  let html = '';
-  data.forEach(d => {
-    let arrow, col;
-    if (d.dir === 'up')   { arrow = '&#9650;'; col = '#00c97a'; }
-    else if (d.dir==='down') { arrow = '&#9660;'; col = '#ff4560'; }
-    else                  { arrow = '&#9830;'; col = '#7a8499'; }
-    const chgStr = d.change >= 0 ? `+${d.change.toLocaleString()}` : d.change.toLocaleString();
-    html += `<div class="flex items-center gap-2 text-sm">
-      <span class="font-mono w-20 text-text-primary font-semibold">${d.label}</span>
-      <span style="color:${col};">${arrow}</span>
-      <span style="color:${col};" class="font-mono">${chgStr}</span>
-      <span class="text-text-muted font-mono text-xs">${d.pct}%</span>
-    </div>`;
-  });
-  container.innerHTML = html;
+  container.prepend(toast);
+
+  // Auto-dismiss after 10 seconds
+  setTimeout(() => dismissToast(toast), 10000);
 }
 
-renderWoW(WOW_CURRENCIES, 'wow-currencies');
-renderWoW(WOW_COMMODITIES, 'wow-commodities');
+/** Animate and remove a toast element */
+function dismissToast(el) {
+  if (!el || !el.parentElement) return;
+  el.classList.add('dismissing');
+  el.addEventListener('animationend', () => el.remove(), { once: true });
+}
 
-/* ---------------------------------------------------------------
-   8. SECTOR ROTATION
---------------------------------------------------------------- */
-const SECTORS = [
-  { label: 'Healthcare    XLV', value: 1.17 },
-  { label: 'Technology    XLK', value: 1.00 },
-  { label: 'Russell       IWM', value: 0.93 },
-  { label: 'Utilities     XLU', value: 0.78 },
-  { label: 'Industrials   XLI', value: 0.73 },
-  { label: 'Energy        XLE', value: 0.61 },
-  { label: 'Dow Jones     DIA', value: 0.60 },
-  { label: 'Total Market  VTI', value: 0.47 },
-  { label: 'Nasdaq        QQQ', value: 0.42 },
-  { label: 'Financials    XLF', value: 0.41 },
-  { label: 'S&P500        SPY', value: 0.39 },
-  { label: 'Consumer      XLP', value: 0.17 },
-  { label: 'Real Estate  XLRE', value: 0.13 },
-];
-
-(function renderSectors() {
-  const maxVal = Math.max(...SECTORS.map(s => s.value));
-  const container = document.getElementById('sector-bars');
-  let html = '';
-  SECTORS.forEach(s => {
-    const pct = (s.value / maxVal) * 100;
-    html += `<div class="sec-row">
-      <div class="sec-label font-mono">${s.label}</div>
-      <div class="sec-bar-track">
-        <div class="sec-bar-fill" style="width:${pct.toFixed(1)}%;"></div>
-      </div>
-      <div class="sec-value">+${s.value.toFixed(2)}%</div>
-    </div>`;
-  });
-  container.innerHTML = html;
-})();
+/* ================================================================
+   DEMO — show a sample toast on load to verify the system works
+================================================================ */
+window.addEventListener('load', () => {
+  // Show a soft demo toast after 2s so the UI is settled
+  setTimeout(() => {
+    showToast('USD', 'Non-Farm Payrolls (demo)', 'in 30m', 'high');
+  }, 2000);
+});
 
 </script>
 </body>
