@@ -110,6 +110,28 @@ def position_sizing():
     return render_template("position_sizing.html")
 
 
+@app.route("/macro")
+def macro_dashboard():
+    """Macro Intelligence Dashboard."""
+    return render_template("macro_dashboard.html")
+
+
+@app.route("/api/calendar")
+def api_calendar():
+    """Proxy ForexFactory economic calendar JSON (avoids browser CORS)."""
+    try:
+        resp = requests.get(
+            "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+            timeout=8,
+            headers={"User-Agent": "KofiFX-Terminal/1.0"},
+        )
+        resp.raise_for_status()
+        return jsonify(resp.json())
+    except Exception as exc:
+        logger.error("Calendar fetch failed: %s", exc)
+        return jsonify([])
+
+
 @app.route("/api/ohlcv")
 def api_ohlcv():
     symbol    = request.args.get("symbol",    "EURUSD").upper()

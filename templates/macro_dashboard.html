@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KofiFX Terminal — Macro Intelligence</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'bg-deep':    '#090b0f',
+            'bg-panel':   '#0e1117',
+            'bg-toolbar': '#121620',
+            'bg-hover':   '#1a1f2e',
+            'border-dark':'#1e2535',
+            'border-light':'#252d3f',
+            'text-primary':'#e2e8f0',
+            'text-secondary':'#7a8499',
+            'text-muted': '#4a5368',
+            'accent':     '#00d4aa',
+            'bull':       '#00c97a',
+            'bear':       '#ff4560',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Base reset */
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background: #090b0f; color: #e2e8f0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; margin: 0; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0e1117; }
+    ::-webkit-scrollbar-thumb { background: #252d3f; border-radius: 3px; }
+
+    /* Sticky topbar */
+    #topbar { position: sticky; top: 0; z-index: 100; background: #121620; border-bottom: 1px solid #1e2535; }
+
+    /* Session pill glow */
+    .session-pill { transition: box-shadow 0.3s, color 0.3s, border-color 0.3s; }
+    .session-pill.active { color: #00d4aa; border-color: #00d4aa; box-shadow: 0 0 8px #00d4aa88; }
+
+    /* RORO gauge */
+    #gauge-arc { transition: stroke-dashoffset 1s ease; }
+
+    /* Pulsing live dot */
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #00c97a; display: inline-block; animation: pulse-dot 1.4s infinite; }
+
+    /* Countdown flash */
+    @keyframes flash { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .countdown-near { animation: flash 0.8s infinite; color: #ff4560; }
+
+    /* Bar chart cells */
+    .bar-wrap { position: relative; height: 18px; background: #1a1f2e; border-radius: 3px; overflow: visible; }
+    .bar-fill  { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+
+    /* Confidence bar */
+    #conf-bar-fill { transition: width 1s ease; }
+
+    /* Responsive grid helpers */
+    @media (max-width: 768px) {
+      .two-col { grid-template-columns: 1fr !important; }
+      .four-col { grid-template-columns: 1fr 1fr !important; }
+    }
+    @media (max-width: 480px) {
+      .four-col { grid-template-columns: 1fr !important; }
+    }
+
+    /* Section card */
+    .card { background: #0e1117; border: 1px solid #1e2535; border-radius: 10px; padding: 20px; }
+    .section-title { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #7a8499; margin-bottom: 16px; font-weight: 600; }
+
+    /* Scanner table */
+    #scanner-table th { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #4a5368; padding: 6px 8px; border-bottom: 1px solid #1e2535; }
+    #scanner-table td { padding: 7px 8px; border-bottom: 1px solid #1a1f2e; font-size: 13px; }
+    #scanner-table tr:last-child td { border-bottom: none; }
+    #scanner-table tr:hover td { background: #1a1f2e; }
+
+    /* COT bar max widths */
+    .cot-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .cot-label { width: 80px; font-size: 12px; color: #7a8499; flex-shrink: 0; text-align: right; }
+    .cot-bar-track { flex: 1; height: 16px; background: #1a1f2e; border-radius: 3px; overflow: hidden; position: relative; }
+    .cot-bar-fill { height: 100%; border-radius: 3px; }
+    .cot-value { width: 65px; font-size: 11px; flex-shrink: 0; }
+
+    /* Sector bar */
+    .sec-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .sec-label { width: 130px; font-size: 12px; color: #7a8499; flex-shrink: 0; }
+    .sec-bar-track { flex: 1; height: 14px; background: #1a1f2e; border-radius: 2px; overflow: hidden; }
+    .sec-bar-fill { height: 100%; background: #00c97a; border-radius: 2px; }
+    .sec-value { width: 50px; font-size: 12px; color: #00c97a; flex-shrink: 0; text-align: right; }
+
+    /* WoW mover arrow */
+    .wow-up   { color: #00c97a; }
+    .wow-down { color: #ff4560; }
+    .wow-flat { color: #7a8499; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- ============================================================
+     1. TOP BAR
+     ============================================================ -->
+<header id="topbar" class="px-4 py-2">
+  <div class="max-w-screen-2xl mx-auto flex flex-wrap items-center gap-3">
+
+    <!-- Brand -->
+    <a href="/" class="flex items-center gap-2 no-underline">
+      <span class="text-accent font-bold text-lg tracking-tight">KofiFX</span>
+      <span class="text-text-secondary text-sm font-medium">Terminal</span>
+    </a>
+    <span class="text-border-light text-lg select-none">|</span>
+    <span class="text-text-secondary text-xs tracking-widest uppercase">Macro Intelligence</span>
+
+    <!-- Spacer -->
+    <div class="flex-1"></div>
+
+    <!-- UTC Clock -->
+    <div class="text-accent font-mono text-sm" id="utc-clock">00:00:00 UTC</div>
+
+    <!-- Session pills -->
+    <div class="flex gap-2">
+      <div class="session-pill border border-border-dark rounded px-2 py-0.5 text-xs font-mono text-text-secondary" data-from="0" data-to="9" id="pill-tokyo">TKY</div>
+      <div class="session-pill border border-border-dark rounded px-2 py-0.5 text-xs font-mono text-text-secondary" data-from="3" data-to="12" id="pill-london">LON</div>
+      <div class="session-pill border border-border-dark rounded px-2 py-0.5 text-xs font-mono text-text-secondary" data-from="13" data-to="21" id="pill-ny">NY</div>
+    </div>
+
+    <!-- Nav links -->
+    <a href="/" class="text-text-secondary hover:text-accent text-xs transition-colors">&#8592; Charts</a>
+    <a href="/position-sizing" class="text-text-secondary hover:text-accent text-xs transition-colors">&#9878; Position Sizing</a>
+  </div>
+</header>
+
+<!-- ============================================================
+     MAIN CONTENT
+     ============================================================ -->
+<main class="max-w-screen-2xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- ===========================================================
+       2. RISK REGIME ROW
+       =========================================================== -->
+  <div class="grid two-col gap-4" style="grid-template-columns: 1fr 1fr;">
+
+    <!-- Left: RORO Gauge + Cross-Asset Tiles -->
+    <div class="card">
+      <p class="section-title">Risk Regime — RORO Score</p>
+      <div class="flex flex-col items-center">
+        <!-- SVG Arc Gauge -->
+        <svg viewBox="0 0 200 120" width="220" height="130">
+          <!-- Background arc -->
+          <path d="M20,110 A90,90 0 0,1 180,110" fill="none" stroke="#1a1f2e" stroke-width="16" stroke-linecap="round"/>
+          <!-- Coloured arc (id=gauge-arc) — dasharray=283 (half circle circumference ~282.7) -->
+          <path id="gauge-arc"
+                d="M20,110 A90,90 0 0,1 180,110"
+                fill="none"
+                stroke="#f0b429"
+                stroke-width="16"
+                stroke-linecap="round"
+                stroke-dasharray="283"
+                stroke-dashoffset="130"
+                style="transform-origin:100px 110px"/>
+          <!-- Zone labels -->
+          <text x="14" y="126" font-size="8" fill="#ff4560" text-anchor="middle">RISK OFF</text>
+          <text x="100" y="18" font-size="8" fill="#7a8499" text-anchor="middle">NEUTRAL</text>
+          <text x="186" y="126" font-size="8" fill="#00c97a" text-anchor="middle">RISK ON</text>
+          <!-- Score -->
+          <text id="roro-score-text" x="100" y="90" font-size="28" font-weight="bold" fill="#f0b429" text-anchor="middle">+11</text>
+          <text x="100" y="106" font-size="10" fill="#7a8499" text-anchor="middle">NEUTRAL</text>
+        </svg>
+
+        <!-- Cross-asset mini tiles -->
+        <div class="grid grid-cols-5 gap-2 w-full mt-4" id="cross-asset-tiles">
+          <!-- Populated by JS -->
+          <div class="bg-bg-hover rounded p-2 text-center text-xs col-span-1" data-symbol="SPX500">
+            <div class="text-text-muted text-xs">S&amp;P500</div>
+            <div class="text-text-primary font-mono font-medium" id="tile-SPX500">--</div>
+            <div class="font-mono text-xs" id="tile-SPX500-chg">--</div>
+          </div>
+          <div class="bg-bg-hover rounded p-2 text-center text-xs col-span-1" data-symbol="USDJPY">
+            <div class="text-text-muted text-xs">USD/JPY</div>
+            <div class="text-text-primary font-mono font-medium" id="tile-USDJPY">--</div>
+            <div class="font-mono text-xs" id="tile-USDJPY-chg">--</div>
+          </div>
+          <div class="bg-bg-hover rounded p-2 text-center text-xs col-span-1" data-symbol="XAUUSD">
+            <div class="text-text-muted text-xs">GOLD</div>
+            <div class="text-text-primary font-mono font-medium" id="tile-XAUUSD">--</div>
+            <div class="font-mono text-xs" id="tile-XAUUSD-chg">--</div>
+          </div>
+          <div class="bg-bg-hover rounded p-2 text-center text-xs col-span-1" data-symbol="WTIUSD">
+            <div class="text-text-muted text-xs">WTI OIL</div>
+            <div class="text-text-primary font-mono font-medium" id="tile-WTIUSD">--</div>
+            <div class="font-mono text-xs" id="tile-WTIUSD-chg">--</div>
+          </div>
+          <div class="bg-bg-hover rounded p-2 text-center text-xs col-span-1" data-symbol="VIX">
+            <div class="text-text-muted text-xs">VIX</div>
+            <div class="text-text-primary font-mono font-medium" id="tile-VIX">--</div>
+            <div class="font-mono text-xs" id="tile-VIX-chg">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: AI Sentiment Banner -->
+    <div class="card flex flex-col justify-between">
+      <div>
+        <p class="section-title">AI Sentiment — Rule-Based Analysis</p>
+        <div class="flex items-center gap-2 mb-4">
+          <span class="text-xs font-mono px-2 py-0.5 rounded" style="background:#1a1f2e;color:#f0b429;">NEUTRAL</span>
+          <span class="text-text-muted text-xs">RORO +11 | COT-derived</span>
+        </div>
+        <p class="text-text-primary text-sm leading-relaxed mb-3">
+          JPY and CHF positioning stretched short — risk-off flows may accelerate if data disappoints.
+          Non-commercial accounts hold significant net-short exposure in CAD and GBP, suggesting continued
+          USD strength bias. NATGAS speculative longs at multi-month extremes; mean-reversion risk elevated.
+          Equity sentiment neutral with modest sector rotation into defensives. Watch central bank divergence
+          (Fed vs. BoJ) as primary macro driver for the week.
+        </p>
+      </div>
+      <!-- Confidence bar -->
+      <div>
+        <div class="flex justify-between text-xs text-text-secondary mb-1">
+          <span>Signal Confidence</span>
+          <span class="text-accent font-mono">87%</span>
+        </div>
+        <div class="w-full h-2 rounded-full" style="background:#1a1f2e;">
+          <div id="conf-bar-fill" class="h-2 rounded-full" style="width:0%;background:#00d4aa;"></div>
+        </div>
+        <p class="text-text-muted text-xs mt-2">Based on COT net positions, RORO score, and cross-asset correlation signals.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===========================================================
+       3. ECONOMIC CALENDAR
+       =========================================================== -->
+  <div class="card">
+    <div class="flex items-center justify-between mb-4">
+      <p class="section-title mb-0">Economic Calendar — Today (UTC)</p>
+      <div class="flex items-center gap-2">
+        <span class="live-dot"></span>
+        <span class="text-xs text-text-secondary font-mono">LIVE</span>
+      </div>
+    </div>
+    <div id="calendar-container" class="overflow-x-auto">
+      <div class="text-text-muted text-sm">Loading calendar...</div>
+    </div>
+  </div>
+
+  <!-- ===========================================================
+       4. CURRENCY PULSE
+       =========================================================== -->
+  <div class="card">
+    <p class="section-title">Currency Pulse — Central Bank Snapshot</p>
+    <div class="grid four-col gap-3 mb-3" style="grid-template-columns:repeat(4,1fr);">
+      <!-- USD -->
+      <div class="bg-bg-hover rounded-lg p-3">
+        <div class="text-lg font-bold text-text-primary mb-2">&#127482;&#127480; USD</div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-accent font-mono">3.64%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span style="color:#00c97a" class="font-mono">3.95%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-primary font-mono">4.30%</span></div>
+        </div>
+      </div>
+      <!-- EUR -->
+      <div class="bg-bg-hover rounded-lg p-3">
+        <div class="text-lg font-bold text-text-primary mb-2">&#127466;&#127482; EUR</div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-accent font-mono">2.00%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span style="color:#00c97a" class="font-mono">3.00%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-muted font-mono">--</span></div>
+        </div>
+      </div>
+      <!-- GBP -->
+      <div class="bg-bg-hover rounded-lg p-3">
+        <div class="text-lg font-bold text-text-primary mb-2">&#127468;&#127463; GBP</div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-text-muted font-mono">--</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span style="color:#00c97a" class="font-mono">3.42%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-primary font-mono">5.20%</span></div>
+        </div>
+      </div>
+      <!-- JPY -->
+      <div class="bg-bg-hover rounded-lg p-3">
+        <div class="text-lg font-bold text-text-primary mb-2">&#127471;&#127477; JPY</div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-accent font-mono">0.73%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span class="text-text-muted font-mono">--</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-primary font-mono">2.70%</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="grid four-col gap-3" style="grid-template-columns:repeat(4,1fr);">
+      <!-- AUD -->
+      <div class="bg-bg-hover rounded-lg p-3">
+        <div class="text-lg font-bold text-text-primary mb-2">&#127462;&#127482; AUD</div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-accent font-mono">4.10%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span style="color:#00c97a" class="font-mono">2.40%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-primary font-mono">4.26%</span></div>
+        </div>
+      </div>
+      <!-- CAD -->
+      <div class="bg-bg-hover rounded-lg p-3">
+        <div class="text-lg font-bold text-text-primary mb-2">&#127464;&#127462; CAD</div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-accent font-mono">2.25%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span class="text-text-muted font-mono">--</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-primary font-mono">6.90%</span></div>
+        </div>
+      </div>
+      <!-- CHF -->
+      <div class="bg-bg-hover rounded-lg p-3">
+        <div class="text-lg font-bold text-text-primary mb-2">&#127464;&#127469; CHF</div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span style="color:#ff4560" class="font-mono">-0.04%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span style="color:#00c97a" class="font-mono">0.03%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-muted font-mono">--</span></div>
+        </div>
+      </div>
+      <!-- NZD -->
+      <div class="bg-bg-hover rounded-lg p-3">
+        <div class="text-lg font-bold text-text-primary mb-2">&#127475;&#127487; NZD</div>
+        <div class="space-y-1 text-xs">
+          <div class="flex justify-between"><span class="text-text-secondary">Policy Rate</span><span class="text-accent font-mono">4.33%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">CPI y/y</span><span style="color:#00c97a" class="font-mono">2.53%</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">Unemployment</span><span class="text-text-muted font-mono">--</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="text-text-muted text-xs mt-3">snapshot · data from FRED / central banks</p>
+  </div>
+
+  <!-- ===========================================================
+       5. COT POSITIONING
+       =========================================================== -->
+  <div class="grid two-col gap-4" style="grid-template-columns:1fr 1fr;">
+    <!-- Currencies -->
+    <div class="card">
+      <p class="section-title">COT Positioning — Currencies (Non-Commercial Net)</p>
+      <div id="cot-currencies"></div>
+      <p class="text-text-muted text-xs mt-3">Data as of 2026-05-19 · Source: CFTC</p>
+    </div>
+    <!-- Commodities -->
+    <div class="card">
+      <p class="section-title">COT Positioning — Commodities (Non-Commercial Net)</p>
+      <div id="cot-commodities"></div>
+      <p class="text-text-muted text-xs mt-3">Data as of 2026-05-19 · Source: CFTC</p>
+    </div>
+  </div>
+
+  <!-- ===========================================================
+       6. MULTI-PAIR SCANNER
+       =========================================================== -->
+  <div class="card">
+    <div class="flex items-center justify-between mb-4">
+      <p class="section-title mb-0">Multi-Pair Scanner</p>
+      <div class="flex items-center gap-2">
+        <span class="live-dot"></span>
+        <span class="text-xs text-text-secondary font-mono">LIVE · 5s poll</span>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full" id="scanner-table">
+        <thead>
+          <tr>
+            <th class="text-left">Symbol</th>
+            <th class="text-right">Price</th>
+            <th class="text-right">24h Change</th>
+            <th class="text-right">24h %</th>
+            <th class="text-center">Direction</th>
+            <th class="text-center">Tick</th>
+          </tr>
+        </thead>
+        <tbody id="scanner-body">
+          <tr><td colspan="6" class="text-text-muted text-sm py-4 text-center">Loading prices...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===========================================================
+       7. STRETCHED POSITIONING + WEEK-OVER-WEEK MOVERS
+       =========================================================== -->
+  <div class="grid two-col gap-4" style="grid-template-columns:1fr 1fr;">
+
+    <!-- Stretched Positioning -->
+    <div class="card">
+      <p class="section-title">Stretched Positioning (|NET| &ge; 30% of OI Estimate)</p>
+      <div class="space-y-3" id="stretched-list">
+        <!-- Populated by JS -->
+      </div>
+      <p class="text-text-muted text-xs mt-4">Data as of 2026-05-19 · Source: CFTC</p>
+    </div>
+
+    <!-- Week-over-Week Movers -->
+    <div class="card">
+      <p class="section-title">Week-over-Week Movers</p>
+      <div class="mb-4">
+        <p class="text-text-secondary text-xs uppercase tracking-widest mb-2">Currencies</p>
+        <div class="space-y-2" id="wow-currencies"></div>
+      </div>
+      <div>
+        <p class="text-text-secondary text-xs uppercase tracking-widest mb-2">Commodities</p>
+        <div class="space-y-2" id="wow-commodities"></div>
+      </div>
+      <p class="text-text-muted text-xs mt-4">Data as of 2026-05-19 · Source: CFTC</p>
+    </div>
+  </div>
+
+  <!-- ===========================================================
+       8. SECTOR ROTATION
+       =========================================================== -->
+  <div class="card">
+    <p class="section-title">Sector Rotation — US ETF 5-Day % Change</p>
+    <div id="sector-bars"></div>
+    <p class="text-text-muted text-xs mt-3">5-day sector % change · Source: yfinance · Updated daily</p>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     9. FOOTER
+     ============================================================ -->
+<footer class="text-center text-text-muted text-xs py-6 border-t mt-6" style="border-color:#1e2535;">
+  Educational use only. Not financial advice. Data: FRED, CFTC, ForexFactory. &copy; KofiFX Terminal
+</footer>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+/* ---------------------------------------------------------------
+   CONSTANTS & HELPERS
+--------------------------------------------------------------- */
+const FLAG_MAP = {
+  USD: '🇺🇸', EUR: '🇪🇺', GBP: '🇬🇧', JPY: '🇯🇵',
+  AUD: '🇦🇺', CAD: '🇨🇦', CHF: '🇨🇭', NZD: '🇳🇿',
+  CNY: '🇨🇳', RUB: '🇷🇺', MXN: '🇲🇽', KRW: '🇰🇷',
+  SGD: '🇸🇬', HKD: '🇭🇰', NOK: '🇳🇴', SEK: '🇸🇪',
+};
+
+function fmtNum(n, decimals=2) {
+  if (n === null || n === undefined || isNaN(n)) return '--';
+  return Number(n).toFixed(decimals);
+}
+
+function colorClass(val) {
+  return val >= 0 ? '#00c97a' : '#ff4560';
+}
+
+function pad2(n) { return String(n).padStart(2,'0'); }
+
+/* ---------------------------------------------------------------
+   1. UTC CLOCK & SESSION PILLS
+--------------------------------------------------------------- */
+function updateClock() {
+  const now = new Date();
+  const h = now.getUTCHours(), m = now.getUTCMinutes(), s = now.getUTCSeconds();
+  document.getElementById('utc-clock').textContent =
+    `${pad2(h)}:${pad2(m)}:${pad2(s)} UTC`;
+
+  // Session activation
+  const pills = [
+    { id: 'pill-tokyo',  from: 0,  to: 9  },
+    { id: 'pill-london', from: 3,  to: 12 },
+    { id: 'pill-ny',     from: 13, to: 21 },
+  ];
+  pills.forEach(p => {
+    const el = document.getElementById(p.id);
+    const active = h >= p.from && h < p.to;
+    el.classList.toggle('active', active);
+  });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ---------------------------------------------------------------
+   2. RORO GAUGE — animate confidence bar on load
+--------------------------------------------------------------- */
+window.addEventListener('load', () => {
+  // Animate confidence bar
+  setTimeout(() => {
+    document.getElementById('conf-bar-fill').style.width = '87%';
+  }, 400);
+});
+
+/* ---------------------------------------------------------------
+   3. CROSS-ASSET TILES — fetch from /api/prices
+--------------------------------------------------------------- */
+const CROSS_SYMBOLS = ['SPX500', 'USDJPY', 'XAUUSD', 'WTIUSD', 'VIX'];
+
+async function fetchCrossAsset() {
+  try {
+    const symbols = CROSS_SYMBOLS.join(',');
+    const res = await fetch(`/api/prices?symbols=${symbols}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    CROSS_SYMBOLS.forEach(sym => {
+      const item = data[sym] || data[sym.toLowerCase()];
+      if (!item) return;
+      const priceEl = document.getElementById(`tile-${sym}`);
+      const chgEl   = document.getElementById(`tile-${sym}-chg`);
+      if (priceEl) priceEl.textContent = fmtNum(item.price, sym === 'VIX' ? 2 : 2);
+      if (chgEl) {
+        const pct = item.change_pct ?? item.changePct ?? 0;
+        chgEl.textContent = (pct >= 0 ? '+' : '') + fmtNum(pct, 2) + '%';
+        chgEl.style.color = colorClass(pct);
+      }
+    });
+  } catch (e) {
+    // Graceful: leave tiles showing '--'
+    console.warn('Cross-asset fetch failed:', e.message);
+  }
+}
+fetchCrossAsset();
+
+/* ---------------------------------------------------------------
+   4. ECONOMIC CALENDAR
+--------------------------------------------------------------- */
+const IMPACT_DOT = {
+  High:   '<span style="color:#ff4560;font-size:14px;">&#11044;</span>',
+  Medium: '<span style="color:#f0b429;font-size:14px;">&#11044;</span>',
+  Low:    '<span style="color:#4a5368;font-size:14px;">&#11044;</span>',
+};
+
+// Countdown from event time string (HH:MM) to now
+function buildCountdown(timeStr) {
+  // timeStr expected as "HH:MM" UTC
+  const now = new Date();
+  const [hh, mm] = (timeStr || '').split(':').map(Number);
+  if (isNaN(hh)) return '';
+  const eventMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hh, mm, 0);
+  const diffSec = Math.floor((eventMs - now.getTime()) / 1000);
+  if (diffSec < 0) return '<span style="color:#4a5368;">passed</span>';
+  const h = Math.floor(diffSec / 3600);
+  const m = Math.floor((diffSec % 3600) / 60);
+  const s = diffSec % 60;
+  const cls = diffSec < 300 ? 'countdown-near' : '';
+  return `<span class="${cls}">${h}h ${pad2(m)}m ${pad2(s)}s</span>`;
+}
+
+let calendarEvents = [];
+
+function renderCalendar() {
+  const container = document.getElementById('calendar-container');
+  const today = new Date();
+  const todayStr = `${today.getUTCFullYear()}-${pad2(today.getUTCMonth()+1)}-${pad2(today.getUTCDate())}`;
+
+  const eventsToday = calendarEvents.filter(ev => {
+    // ForexFactory date field may be "May 31, 2026" or ISO
+    if (!ev.date) return false;
+    try {
+      const d = new Date(ev.date);
+      const ds = `${d.getUTCFullYear()}-${pad2(d.getUTCMonth()+1)}-${pad2(d.getUTCDate())}`;
+      return ds === todayStr;
+    } catch { return false; }
+  });
+
+  if (eventsToday.length === 0) {
+    container.innerHTML = '<div class="text-text-muted text-sm py-4">No high-impact events today.</div>';
+    return;
+  }
+
+  let html = `
+  <table class="w-full text-sm">
+    <thead>
+      <tr style="border-bottom:1px solid #1e2535;">
+        <th class="text-left py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Time (UTC)</th>
+        <th class="text-left py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Ccy</th>
+        <th class="text-left py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Event</th>
+        <th class="text-center py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Impact</th>
+        <th class="text-right py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Forecast</th>
+        <th class="text-right py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Previous</th>
+        <th class="text-right py-2 px-2 text-xs text-text-muted uppercase tracking-wider">Countdown</th>
+      </tr>
+    </thead>
+    <tbody id="cal-body">`;
+
+  eventsToday.forEach((ev, i) => {
+    const flag = FLAG_MAP[ev.currency] || '';
+    const dot  = IMPACT_DOT[ev.impact] || IMPACT_DOT.Low;
+    html += `<tr style="border-bottom:1px solid #1a1f2e;" class="cal-row" data-time="${ev.time || ''}">
+      <td class="py-2 px-2 font-mono text-text-secondary">${ev.time || '--'}</td>
+      <td class="py-2 px-2">${flag} <span class="text-text-secondary">${ev.currency || ''}</span></td>
+      <td class="py-2 px-2 text-text-primary">${ev.title || ev.name || ''}</td>
+      <td class="py-2 px-2 text-center">${dot}</td>
+      <td class="py-2 px-2 text-right font-mono text-text-secondary">${ev.forecast || '--'}</td>
+      <td class="py-2 px-2 text-right font-mono text-text-secondary">${ev.previous || '--'}</td>
+      <td class="py-2 px-2 text-right font-mono countdown-cell" data-time="${ev.time || ''}">${buildCountdown(ev.time)}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function updateCountdowns() {
+  document.querySelectorAll('.countdown-cell').forEach(cell => {
+    const t = cell.getAttribute('data-time');
+    cell.innerHTML = buildCountdown(t);
+  });
+}
+
+async function fetchCalendar() {
+  try {
+    const res = await fetch('/api/calendar');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    calendarEvents = await res.json();
+  } catch (e) {
+    console.warn('Calendar fetch failed:', e.message);
+    calendarEvents = [];
+  }
+  renderCalendar();
+}
+
+fetchCalendar();
+// Update countdowns every second
+setInterval(updateCountdowns, 1000);
+
+/* ---------------------------------------------------------------
+   5. COT POSITIONING — render bar charts
+--------------------------------------------------------------- */
+const COT_CURRENCIES = [
+  { label: 'AUD', value:  68000 },
+  { label: 'MXN', value:  58000 },
+  { label: 'EUR', value:  29000 },
+  { label: 'NZD', value: -34000 },
+  { label: 'CHF', value: -35000 },
+  { label: 'GBP', value: -61000 },
+  { label: 'CAD', value: -69000 },
+  { label: 'JPY', value: -115000 },
+];
+
+const COT_COMMODITIES = [
+  { label: 'NATGAS',   value:  253000 },
+  { label: 'GOLD',     value:  154000 },
+  { label: 'COPPER',   value:   73000 },
+  { label: 'SILVER',   value:   22000 },
+  { label: 'PLATINUM', value:   18000 },
+  { label: 'BITCOIN',  value:    2000 },
+  { label: 'USD',      value:     850 },
+  { label: 'CRUDE',    value:  -27000 },
+];
+
+function renderCOT(data, containerId) {
+  const maxAbs = Math.max(...data.map(d => Math.abs(d.value)));
+  const container = document.getElementById(containerId);
+  let html = '';
+  data.forEach(d => {
+    const pct = (Math.abs(d.value) / maxAbs) * 100;
+    const col = d.value >= 0 ? '#00c97a' : '#ff4560';
+    const label = d.value >= 0
+      ? `+${(d.value/1000).toFixed(0)}k`
+      : `${(d.value/1000).toFixed(0)}k`;
+    html += `<div class="cot-row">
+      <div class="cot-label">${d.label}</div>
+      <div class="cot-bar-track">
+        <div class="cot-bar-fill" style="width:${pct.toFixed(1)}%;background:${col};"></div>
+      </div>
+      <div class="cot-value" style="color:${col};">${label}</div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+renderCOT(COT_CURRENCIES, 'cot-currencies');
+renderCOT(COT_COMMODITIES, 'cot-commodities');
+
+/* ---------------------------------------------------------------
+   6. MULTI-PAIR SCANNER — poll /api/prices every 5s
+--------------------------------------------------------------- */
+const SCANNER_SYMBOLS = [
+  'EURUSD','GBPUSD','AUDUSD','USDJPY','USDCAD','USDCHF',
+  'GBPJPY','AUDJPY','CADJPY','NZDUSD','XAUUSD','GBPNZD','AUDCHF','CADCHF'
+];
+
+// Track previous prices for tick direction
+const prevPrices = {};
+
+function renderScanner(data) {
+  const tbody = document.getElementById('scanner-body');
+  if (!data || typeof data !== 'object') {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-text-muted text-sm py-4 text-center">Price data unavailable.</td></tr>';
+    return;
+  }
+
+  let html = '';
+  SCANNER_SYMBOLS.forEach(sym => {
+    const item = data[sym] || data[sym.toLowerCase()];
+    if (!item) {
+      html += `<tr>
+        <td class="font-mono text-text-primary">${sym}</td>
+        <td colspan="5" class="text-text-muted text-right">unavailable</td>
+      </tr>`;
+      return;
+    }
+
+    const price   = item.price ?? item.bid ?? null;
+    const change  = item.change ?? item.change_24h ?? 0;
+    const changePct = item.change_pct ?? item.changePct ?? 0;
+    const isBull  = changePct >= 0;
+    const priceCol = isBull ? '#00c97a' : '#ff4560';
+
+    // Tick direction vs previous price
+    let tick = '&#9644;'; // flat
+    let tickCol = '#7a8499';
+    if (prevPrices[sym] !== undefined && price !== null) {
+      if (price > prevPrices[sym]) { tick = '&#9650;'; tickCol = '#00c97a'; }
+      else if (price < prevPrices[sym]) { tick = '&#9660;'; tickCol = '#ff4560'; }
+    }
+    if (price !== null) prevPrices[sym] = price;
+
+    // Decimal places: JPY pairs 3, XAU 2, others 5
+    let dec = 5;
+    if (sym.includes('JPY')) dec = 3;
+    if (sym.includes('XAU')) dec = 2;
+
+    const dirBadge = isBull
+      ? `<span style="color:#00c97a;background:#00c97a18;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">&#9650; BULL</span>`
+      : `<span style="color:#ff4560;background:#ff456018;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">&#9660; BEAR</span>`;
+
+    html += `<tr>
+      <td class="font-mono font-semibold text-text-primary">${sym}</td>
+      <td class="text-right font-mono" style="color:${priceCol};">${fmtNum(price, dec)}</td>
+      <td class="text-right font-mono" style="color:${priceCol};">${change >= 0 ? '+' : ''}${fmtNum(change, dec)}</td>
+      <td class="text-right font-mono" style="color:${priceCol};">${changePct >= 0 ? '+' : ''}${fmtNum(changePct, 2)}%</td>
+      <td class="text-center">${dirBadge}</td>
+      <td class="text-center font-mono" style="color:${tickCol};font-size:14px;">${tick}</td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = html;
+}
+
+async function fetchScanner() {
+  try {
+    const symbols = SCANNER_SYMBOLS.join(',');
+    const res = await fetch(`/api/prices?symbols=${symbols}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    renderScanner(data);
+  } catch (e) {
+    console.warn('Scanner fetch failed:', e.message);
+    renderScanner(null);
+  }
+}
+
+fetchScanner();
+setInterval(fetchScanner, 5000);
+
+/* ---------------------------------------------------------------
+   7. STRETCHED POSITIONING
+--------------------------------------------------------------- */
+const STRETCHED = [
+  { label: 'NATGAS',   dir: 'long',  pct:  83, net:  253000 },
+  { label: 'CHF',      dir: 'short', pct: -71, net:  -35000 },
+  { label: 'GOLD',     dir: 'long',  pct:  62, net:  154000 },
+  { label: 'NZD',      dir: 'short', pct: -59, net:  -34000 },
+  { label: 'COPPER',   dir: 'long',  pct:  53, net:   73000 },
+  { label: 'PLATINUM', dir: 'long',  pct:  51, net:   18000 },
+  { label: 'SILVER',   dir: 'long',  pct:  51, net:   22000 },
+  { label: 'MXN',      dir: 'long',  pct:  47, net:   58000 },
+];
+
+(function renderStretched() {
+  const container = document.getElementById('stretched-list');
+  let html = '';
+  STRETCHED.forEach(s => {
+    const isLong = s.dir === 'long';
+    const badgeCol = isLong ? '#00c97a' : '#ff4560';
+    const badgeBg  = isLong ? '#00c97a18' : '#ff456018';
+    const badgeText = isLong ? `long +${s.pct}%` : `short ${s.pct}%`;
+    const netLabel = s.net >= 0
+      ? `+${(s.net/1000).toFixed(0)}k contracts`
+      : `${(s.net/1000).toFixed(0)}k contracts`;
+    html += `<div class="flex items-center gap-3">
+      <span class="font-mono font-semibold text-text-primary w-20">${s.label}</span>
+      <span style="color:${badgeCol};background:${badgeBg};padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;">${badgeText}</span>
+      <span class="text-text-muted text-xs font-mono">${netLabel}</span>
+    </div>`;
+  });
+  container.innerHTML = html;
+})();
+
+/* ---------------------------------------------------------------
+   7b. WEEK-OVER-WEEK MOVERS
+--------------------------------------------------------------- */
+const WOW_CURRENCIES = [
+  { label:'CAD', dir:'down', change:-37651, pct:121 },
+  { label:'AUD', dir:'down', change:-25489, pct:30  },
+  { label:'JPY', dir:'down', change:-20762, pct:22  },
+  { label:'NZD', dir:'up',   change: +6434, pct:16  },
+  { label:'GOLD',dir:'down', change: -5573, pct:3   },
+  { label:'MXN', dir:'down', change: -4095, pct:7   },
+  { label:'EUR', dir:'down', change: -4087, pct:12  },
+  { label:'GBP', dir:'up',   change: +2909, pct:5   },
+];
+
+const WOW_COMMODITIES = [
+  { label:'CRUDE',    dir:'up',   change: +4019, pct:11.5 },
+  { label:'GOLD',     dir:'up',   change: +3906, pct:4.2  },
+  { label:'COPPER',   dir:'down', change: -3688, pct:5.0  },
+  { label:'SILVER',   dir:'down', change: -1509, pct:13   },
+  { label:'USD',      dir:'down', change:  -814, pct:6.9  },
+  { label:'PLATINUM', dir:'down', change:  -509, pct:3.8  },
+  { label:'BITCOIN',  dir:'up',   change:  +327, pct:3.6  },
+  { label:'NATGAS',   dir:'flat', change:     0, pct:0    },
+];
+
+function renderWoW(data, containerId) {
+  const container = document.getElementById(containerId);
+  let html = '';
+  data.forEach(d => {
+    let arrow, col;
+    if (d.dir === 'up')   { arrow = '&#9650;'; col = '#00c97a'; }
+    else if (d.dir==='down') { arrow = '&#9660;'; col = '#ff4560'; }
+    else                  { arrow = '&#9830;'; col = '#7a8499'; }
+    const chgStr = d.change >= 0 ? `+${d.change.toLocaleString()}` : d.change.toLocaleString();
+    html += `<div class="flex items-center gap-2 text-sm">
+      <span class="font-mono w-20 text-text-primary font-semibold">${d.label}</span>
+      <span style="color:${col};">${arrow}</span>
+      <span style="color:${col};" class="font-mono">${chgStr}</span>
+      <span class="text-text-muted font-mono text-xs">${d.pct}%</span>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+renderWoW(WOW_CURRENCIES, 'wow-currencies');
+renderWoW(WOW_COMMODITIES, 'wow-commodities');
+
+/* ---------------------------------------------------------------
+   8. SECTOR ROTATION
+--------------------------------------------------------------- */
+const SECTORS = [
+  { label: 'Healthcare    XLV', value: 1.17 },
+  { label: 'Technology    XLK', value: 1.00 },
+  { label: 'Russell       IWM', value: 0.93 },
+  { label: 'Utilities     XLU', value: 0.78 },
+  { label: 'Industrials   XLI', value: 0.73 },
+  { label: 'Energy        XLE', value: 0.61 },
+  { label: 'Dow Jones     DIA', value: 0.60 },
+  { label: 'Total Market  VTI', value: 0.47 },
+  { label: 'Nasdaq        QQQ', value: 0.42 },
+  { label: 'Financials    XLF', value: 0.41 },
+  { label: 'S&P500        SPY', value: 0.39 },
+  { label: 'Consumer      XLP', value: 0.17 },
+  { label: 'Real Estate  XLRE', value: 0.13 },
+];
+
+(function renderSectors() {
+  const maxVal = Math.max(...SECTORS.map(s => s.value));
+  const container = document.getElementById('sector-bars');
+  let html = '';
+  SECTORS.forEach(s => {
+    const pct = (s.value / maxVal) * 100;
+    html += `<div class="sec-row">
+      <div class="sec-label font-mono">${s.label}</div>
+      <div class="sec-bar-track">
+        <div class="sec-bar-fill" style="width:${pct.toFixed(1)}%;"></div>
+      </div>
+      <div class="sec-value">+${s.value.toFixed(2)}%</div>
+    </div>`;
+  });
+  container.innerHTML = html;
+})();
+
+</script>
+</body>
+</html>
