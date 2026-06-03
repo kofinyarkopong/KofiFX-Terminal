@@ -51,16 +51,19 @@ OANDA_INSTRUMENT_MAP: dict[str, str] = {
     'EURUSD': 'EUR_USD', 'GBPUSD': 'GBP_USD', 'USDJPY': 'USD_JPY',
     'USDCHF': 'USD_CHF', 'USDCAD': 'USD_CAD', 'AUDUSD': 'AUD_USD',
     'NZDUSD': 'NZD_USD',
-    # Cross pairs
+    # EUR crosses
     'EURGBP': 'EUR_GBP', 'EURJPY': 'EUR_JPY', 'EURCHF': 'EUR_CHF',
-    'EURCAD': 'EUR_CAD', 'EURNZD': 'EUR_NZD',
+    'EURCAD': 'EUR_CAD', 'EURAUD': 'EUR_AUD', 'EURNZD': 'EUR_NZD',
+    # GBP crosses
     'GBPJPY': 'GBP_JPY', 'GBPCAD': 'GBP_CAD', 'GBPCHF': 'GBP_CHF',
-    'GBPNZD': 'GBP_NZD',
+    'GBPAUD': 'GBP_AUD', 'GBPNZD': 'GBP_NZD',
+    # AUD crosses
     'AUDJPY': 'AUD_JPY', 'AUDCAD': 'AUD_CAD', 'AUDCHF': 'AUD_CHF',
     'AUDNZD': 'AUD_NZD',
+    # CAD / NZD crosses
     'CADJPY': 'CAD_JPY', 'CADCHF': 'CAD_CHF',
-    'CHFJPY': 'CHF_JPY', 'NZDJPY': 'NZD_JPY', 'NZDCAD': 'NZD_CAD',
-    'NZDCHF': 'NZD_CHF',
+    'NZDJPY': 'NZD_JPY', 'NZDCAD': 'NZD_CAD', 'NZDCHF': 'NZD_CHF',
+    'CHFJPY': 'CHF_JPY',
     # Metals
     'XAUUSD': 'XAU_USD', 'XAGUSD': 'XAG_USD',
 }
@@ -332,28 +335,58 @@ def _get_ohlcv_oanda(symbol: str, timeframe: str, limit: int) -> list[dict]:
 
 
 def _get_price_oanda(symbol: str) -> dict:
-    """Fetch latest bid/ask from OANDA pricing endpoint and return mid price."""
+    """Return the most current mid price from OANDA.
+
+    Strategy:
+      1. Fetch the last 2 S5 (5-second) candles — gives near-live price.
+      2. If S5 is empty (outside market hours), fall back to M1 then H1.
+      3. Use today's first H1 candle open as the 'previous close' for
+         daily change so the change % feels meaningful.
+    """
     instrument = OANDA_INSTRUMENT_MAP[symbol.upper()]
     url        = f'{OANDA_BASE_URL}/instruments/{instrument}/candles'
-    # Grab just the last 2 completed candles on H1 to derive change
-    params = {'granularity': 'H1', 'count': 2, 'price': 'M'}
+    decimals   = _decimal_places(symbol)
+
+    def _fetch(gran: str, count: int):
+        params = {'granularity': gran, 'count': count, 'price': 'M'}
+        r = requests.get(url, headers=_oanda_headers(), params=params, timeout=8)
+        r.raise_for_status()
+        return r.json().get('candles', [])
+
     try:
-        resp = requests.get(url, headers=_oanda_headers(), params=params, timeout=8)
-        resp.raise_for_status()
-        raw = resp.json()
-        completed = [c for c in raw.get('candles', []) if c.get('complete', True)]
-        if not completed:
+        # --- Live price: use the most recent completed 5-second candle ---
+        price = 0.0
+        for gran in ('S5', 'M1', 'M5'):
+            candles = _fetch(gran, 3)
+            completed = [c for c in candles if c.get('complete', True)]
+            # Also accept the current (incomplete) candle for a tighter quote
+            all_c = completed or candles
+            if all_c:
+                price = float(all_c[-1]['mid']['c'])
+                break
+
+        if not price:
             return {'symbol': symbol, 'price': 0, 'change': 0,
                     'change_pct': 0, 'direction': 'flat'}
 
-        last = completed[-1]
-        prev = completed[-2] if len(completed) >= 2 else last
-        price = float(last['mid']['c'])
-        prev_price = float(prev['mid']['c'])
-        change     = price - prev_price
-        change_pct = (change / prev_price * 100) if prev_price else 0
+        # --- Daily change: compare against today's session open (H1 D candle) ---
+        try:
+            day_candles = _fetch('D', 2)
+            completed_day = [c for c in day_candles if c.get('complete', True)]
+            if completed_day:
+                prev_close = float(completed_day[-1]['mid']['c'])
+            else:
+                # Use H1 open as reference
+                h1 = _fetch('H1', 2)
+                h1c = [c for c in h1 if c.get('complete', True)]
+                prev_close = float(h1c[-1]['mid']['o']) if h1c else price
+        except Exception:
+            prev_close = price
+
+        change     = price - prev_close
+        change_pct = (change / prev_close * 100) if prev_close else 0
         direction  = 'up' if change > 0 else ('down' if change < 0 else 'flat')
-        decimals   = _decimal_places(symbol)
+
         return {
             'symbol':     symbol,
             'price':      round(price,      decimals),
