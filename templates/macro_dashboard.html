@@ -1068,6 +1068,24 @@
     <p class="text-xs text-txt-muted mt-3">Bar length = relative fund flow weight. Interpretation: Risk-On favours Tech/Financials; Risk-Off favours Utilities/Gold.</p>
   </div><!-- /sector rotation -->
 
+  <!-- ============================================================
+       REAL-TIME FOREX NEWS (ForexFactory + FXStreet RSS)
+  ============================================================ -->
+  <div class="panel" style="padding:20px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="panel-title" style="margin:0;">Forex News</span>
+        <span class="live-dot"></span>
+        <span style="font-size:10px; color:#7a8499;">ForexFactory · FXStreet</span>
+      </div>
+      <button onclick="fetchNews()" style="font-size:11px; color:#7a8499; background:none; border:1px solid #1e2535; border-radius:4px; padding:3px 10px; cursor:pointer;">↻ Refresh</button>
+    </div>
+    <div id="news-grid"
+         style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:10px;">
+      <div style="color:#4a5368; font-size:12px; padding:20px; grid-column:1/-1;">Loading news…</div>
+    </div>
+  </div>
+
 </main><!-- /main -->
 
 <!-- ============================================================
@@ -1622,10 +1640,33 @@ checkNotifPermission();
 
 /** Request notification permission when user clicks Enable */
 function requestNotifPermission() {
-  if (typeof Notification === 'undefined') return;
-  Notification.requestPermission().then(perm => {
+  const btn = document.querySelector('#notif-banner button');
+
+  if (typeof Notification === 'undefined') {
+    alert('Browser notifications are not supported in this browser. Try Chrome or Edge.');
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    document.getElementById('notif-banner').classList.add('hidden');
+    return;
+  }
+  if (Notification.permission === 'denied') {
+    alert('Notifications are blocked. Please click the 🔒 icon in your browser address bar and allow notifications for this site, then reload.');
+    return;
+  }
+
+  // Must be called synchronously inside a user-gesture handler
+  if (btn) { btn.textContent = 'Requesting…'; btn.disabled = true; }
+
+  const result = Notification.requestPermission();
+  // requestPermission returns a Promise in modern browsers, callback in old ones
+  Promise.resolve(result).then(perm => {
     if (perm === 'granted') {
       document.getElementById('notif-banner').classList.add('hidden');
+      showToast('SYS', 'Notifications enabled — you will be alerted before high-impact events.', 'now', 'medium');
+    } else {
+      if (btn) { btn.textContent = 'Enable Notifications'; btn.disabled = false; }
+      alert('Permission denied. Enable notifications in browser settings → Site Settings → Notifications.');
     }
   });
 }
@@ -2011,6 +2052,60 @@ function dismissToast(el) {
 /* ================================================================
    DEMO — show a sample toast on load to verify the system works
 ================================================================ */
+/* ================================================================
+   REAL FOREX NEWS
+================================================================ */
+async function fetchNews() {
+  const grid = document.getElementById('news-grid');
+  try {
+    const res = await fetch('/api/news');
+    if (!res.ok) throw new Error(`Status ${res.status}`);
+    const articles = await res.json();
+
+    if (!articles.length) {
+      grid.innerHTML = '<div style="color:#4a5368;font-size:12px;padding:20px;grid-column:1/-1;">No news available right now.</div>';
+      return;
+    }
+
+    grid.innerHTML = articles.slice(0, 24).map(a => {
+      // Parse and format time
+      let timeStr = '';
+      try {
+        const d = new Date(a.pubDate);
+        const hh = String(d.getUTCHours()).padStart(2,'0');
+        const mm = String(d.getUTCMinutes()).padStart(2,'0');
+        const dd = d.toUTCString().slice(0, 11);
+        timeStr = `${dd} ${hh}:${mm} GMT`;
+      } catch(_) { timeStr = a.pubDate; }
+
+      const srcColor = a.source === 'ForexFactory' ? '#f0b429' : '#00d4aa';
+      const title = (a.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const link  = a.link ? `href="${a.link}" target="_blank" rel="noopener"` : '';
+
+      return `
+        <a ${link} style="display:block; text-decoration:none;
+                           background:#121620; border:1px solid #1e2535;
+                           border-radius:6px; padding:12px 14px;
+                           transition:border-color 0.14s;"
+           onmouseover="this.style.borderColor='#252d3f'"
+           onmouseout="this.style.borderColor='#1e2535'">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-size:10px; font-weight:700; color:${srcColor}; letter-spacing:0.06em;">${a.source.toUpperCase()}</span>
+            <span style="font-size:10px; color:#4a5368; font-family:monospace;">${timeStr}</span>
+          </div>
+          <p style="font-size:12px; color:#e2e8f0; line-height:1.4; margin:0;">${title}</p>
+        </a>`;
+    }).join('');
+
+  } catch (err) {
+    grid.innerHTML = `<div style="color:#4a5368;font-size:12px;padding:20px;grid-column:1/-1;">News unavailable: ${err.message}</div>`;
+  }
+}
+
+// Auto-refresh news every 5 minutes
+fetchNews();
+setInterval(fetchNews, 5 * 60 * 1000);
+
 window.addEventListener('load', () => {
   // Auto-connect Exness if server token is already configured in .env
   autoConnectIfConfigured();

@@ -51,6 +51,8 @@ class ChartPane {
       if (window._kofifxSubscribe) window._kofifxSubscribe(this.symbol);
       if (this._indicator) this._indicator.updateSymbol(this.symbol);
       this.reload();
+      // Re-filter news events for the new pair
+      ChartPane._fetchSharedCalendar().then(ev => this._applyNewsEvents(ev));
     });
 
     this._q('.tf-select').value = this.timeframe;
@@ -90,6 +92,10 @@ class ChartPane {
 
     this.reload();
     this._subscribeHyperliquid();
+
+    // Fetch high-impact calendar events and overlay them on the chart.
+    // Share the cached result across all panes via a module-level promise.
+    ChartPane._fetchSharedCalendar().then(events => this._applyNewsEvents(events));
   }
 
   // ── Chart ─────────────────────────────────────────────────────────────────
@@ -533,6 +539,69 @@ class ChartPane {
   }
   _showLoading(show) { this._q('.pane-loading')?.classList.toggle('hidden', !show); }
   _showError(show)   { this._q('.pane-error')?.classList.toggle('hidden', !show); }
+
+  // ── High-impact news event overlay ───────────────────────────────────────
+
+  /**
+   * Shared calendar cache — fetched once, reused by all panes.
+   * Returns a Promise<Array> of ALL this-week events.
+   */
+  static _calendarPromise = null;
+  static _calendarFetchedAt = 0;
+
+  static _fetchSharedCalendar() {
+    const AGE_MS = 30 * 60 * 1000; // re-fetch after 30 min
+    if (ChartPane._calendarPromise && Date.now() - ChartPane._calendarFetchedAt < AGE_MS) {
+      return ChartPane._calendarPromise;
+    }
+    ChartPane._calendarFetchedAt = Date.now();
+    ChartPane._calendarPromise = fetch('/api/calendar')
+      .then(r => r.ok ? r.json() : [])
+      .catch(() => []);
+    return ChartPane._calendarPromise;
+  }
+
+  /**
+   * Extract the two ISO-4217 currency codes from a symbol string.
+   * USDJPY → ['USD','JPY']   XAUUSD → ['XAU','USD']
+   */
+  static _pairCurrencies(symbol) {
+    const s = symbol.replace('/', '').toUpperCase();
+    if (s.length === 6) return [s.slice(0, 3), s.slice(3, 6)];
+    return [];
+  }
+
+  /**
+   * Filter the full calendar to HIGH-impact events relevant to this pane's
+   * pair currencies and pass them to the KofiNoWick overlay.
+   */
+  _applyNewsEvents(allEvents) {
+    if (!this._indicator || !Array.isArray(allEvents)) return;
+
+    const currencies = ChartPane._pairCurrencies(this.symbol);
+    if (!currencies.length) { this._indicator.setNewsEvents([]); return; }
+
+    const todayUTC = new Date().toISOString().slice(0, 10);
+
+    const filtered = allEvents
+      .filter(ev => {
+        const ccy    = (ev.currency || ev.country || '').toUpperCase();
+        const impact = (ev.impact   || '').toLowerCase();
+        // Only HIGH impact, only today (UTC), only pair's currencies
+        if (impact !== 'high') return false;
+        if (!currencies.includes(ccy)) return false;
+        const evDate = new Date(ev.date || ev.datetime || '').toISOString().slice(0, 10);
+        return evDate === todayUTC;
+      })
+      .map(ev => ({
+        time:     Math.floor(new Date(ev.date || ev.datetime || '').getTime() / 1000),
+        currency: (ev.currency || ev.country || '').toUpperCase(),
+        title:    (ev.title || ev.event || ev.name || '').trim(),
+      }))
+      .filter(ev => ev.time > 0);
+
+    this._indicator.setNewsEvents(filtered);
+  }
 
   // ── Cleanup ───────────────────────────────────────────────────────────────
   destroy() {

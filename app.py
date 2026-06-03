@@ -123,18 +123,56 @@ def macro_dashboard():
 
 @app.route("/api/calendar")
 def api_calendar():
-    """Proxy ForexFactory economic calendar JSON (avoids browser CORS)."""
+    """Proxy ForexFactory economic calendar JSON (avoids browser CORS).
+    Returns the full week; clients filter to today."""
     try:
         resp = requests.get(
             "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
             timeout=8,
-            headers={"User-Agent": "KofiFX-Terminal/1.0"},
+            headers={"User-Agent": "Mozilla/5.0 KofiFX-Terminal/1.0"},
         )
         resp.raise_for_status()
         return jsonify(resp.json())
     except Exception as exc:
         logger.error("Calendar fetch failed: %s", exc)
         return jsonify([])
+
+
+@app.route("/api/news")
+def api_news():
+    """Proxy ForexFactory and FXStreet news RSS feeds, return as JSON array.
+    Each item: {title, link, pubDate, source}"""
+    import xml.etree.ElementTree as ET
+
+    feeds = [
+        ("ForexFactory", "https://www.forexfactory.com/rss.php?news"),
+        ("FXStreet",     "https://www.fxstreet.com/rss/news"),
+    ]
+    articles = []
+    for source, url in feeds:
+        try:
+            resp = requests.get(
+                url, timeout=8,
+                headers={"User-Agent": "Mozilla/5.0 KofiFX-Terminal/1.0"},
+            )
+            resp.raise_for_status()
+            root = ET.fromstring(resp.content)
+            for item in root.iter("item"):
+                title   = item.findtext("title",   "").strip()
+                link    = item.findtext("link",    "").strip()
+                pubDate = item.findtext("pubDate", "").strip()
+                if title:
+                    articles.append({
+                        "title":   title,
+                        "link":    link,
+                        "pubDate": pubDate,
+                        "source":  source,
+                    })
+        except Exception as exc:
+            logger.warning("News feed %s failed: %s", source, exc)
+
+    # Return newest-first, cap at 40
+    return jsonify(articles[:40])
 
 
 # ---------------------------------------------------------------------------

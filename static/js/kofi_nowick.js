@@ -112,6 +112,7 @@ class KofiNoWick {
     this._quickBar   = null;
     this._settingsEl = null;
     this._settingsOpen = false;
+    this._newsEvents = [];  // [{time:unixSec, currency:'USD', title:'ISM PMI'}]
 
     this._setup();
   }
@@ -178,6 +179,15 @@ class KofiNoWick {
   updateSymbol(symbol) {
     this.symbol = symbol.toUpperCase();
     this._updateRiskPanel();
+  }
+
+  /**
+   * Pass high-impact calendar events for the current pair's currencies.
+   * @param {Array<{time:number, currency:string, title:string}>} events
+   */
+  setNewsEvents(events) {
+    this._newsEvents = (events || []).sort((a, b) => a.time - b.time);
+    this._scheduleDraw();
   }
 
   toggleSettings() {
@@ -412,8 +422,50 @@ class KofiNoWick {
     ctx.clearRect(0, 0, W, H);
 
     this._drawSessions(ctx, W, H);
+    this._drawNewsLines(ctx, W, H);     // high-impact news verticals
     this._drawStructureLines(ctx, W, H);
     this._drawPivotLabels(ctx, W, H);
+  }
+
+  // ── High-impact news vertical lines ───────────────────────────────────────
+  _drawNewsLines(ctx, W, H) {
+    if (!this._newsEvents || this._newsEvents.length === 0) return;
+    const ts = this.chart.timeScale();
+
+    for (const ev of this._newsEvents) {
+      const x = ts.timeToCoordinate(ev.time);
+      if (x === null || x < -1 || x > W + 1) continue;
+
+      // Dashed vertical line
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 69, 96, 0.75)';
+      ctx.lineWidth   = 1.2;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
+      ctx.stroke();
+
+      // Top label pill: "USD ISM PMI" (truncated to 18 chars)
+      const label  = `${ev.currency} · ${ev.title}`.substring(0, 22);
+      const pad    = 5;
+      ctx.font     = 'bold 9px "Inter", "Segoe UI", sans-serif';
+      const tw     = ctx.measureText(label).width;
+      const lx     = Math.min(Math.max(x - tw / 2 - pad, 0), W - tw - pad * 2);
+      const ly     = 6;
+      const lh     = 14;
+
+      ctx.fillStyle    = 'rgba(255, 69, 96, 0.85)';
+      ctx.beginPath();
+      ctx.roundRect?.(lx, ly, tw + pad * 2, lh, 3);
+      ctx.fill();
+
+      ctx.fillStyle    = '#fff';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign    = 'left';
+      ctx.fillText(label, lx + pad, ly + lh / 2);
+      ctx.restore();
+    }
   }
 
   // ── Session zones ─────────────────────────────────────────────────────────
