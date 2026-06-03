@@ -26,6 +26,8 @@ class ChartPane {
     this._lastPrice  = null;
     this._lastCandle = null;
     this._resizeObs  = null;
+    this._stylePanel = null;   // Chart style floating panel
+    this._style      = this._loadStyle(); // Per-pane colour settings
 
     this._init(opts);
   }
@@ -64,6 +66,10 @@ class ChartPane {
       e.stopPropagation();
       if (this._indicator) this._indicator.toggleSettings();
     });
+    this._q('.pane-btn--style')?.addEventListener('click', e => {
+      e.stopPropagation();
+      this._toggleStylePanel();
+    });
 
     // Indicator "+" button
     this._q('.pane-btn--add-ind').addEventListener('click', e => {
@@ -89,25 +95,26 @@ class ChartPane {
   // ── Chart ─────────────────────────────────────────────────────────────────
   _createChart() {
     const container = this._q('.chart-container');
+    const s = this._style;
 
     this._chart = LightweightCharts.createChart(container, {
       layout: {
-        background: { type: 'solid', color: '#0e1117' },
-        textColor: '#7a8499',
+        background: { type: 'solid', color: s.bg },
+        textColor: s.textColor,
         fontFamily: "'JetBrains Mono','Fira Code',monospace",
         fontSize: 11,
       },
       grid: {
-        vertLines: { color: '#1a1f2e', style: 1 },
-        horzLines: { color: '#1a1f2e', style: 1 },
+        vertLines: { color: s.gridColor, style: 1 },
+        horzLines: { color: s.gridColor, style: 1 },
       },
       crosshair: {
-        vertLine: { color: '#444c6a', labelBackgroundColor: '#1e2535' },
-        horzLine: { color: '#444c6a', labelBackgroundColor: '#1e2535' },
+        vertLine: { color: s.crossColor, labelBackgroundColor: s.labelBg },
+        horzLine: { color: s.crossColor, labelBackgroundColor: s.labelBg },
       },
-      rightPriceScale: { borderColor: '#1e2535', textColor: '#7a8499' },
+      rightPriceScale: { borderColor: s.borderColor, textColor: s.textColor },
       timeScale: {
-        borderColor: '#1e2535', textColor: '#7a8499',
+        borderColor: s.borderColor, textColor: s.textColor,
         timeVisible: true, secondsVisible: false,
         rightOffset: 8, barSpacing: 8,
       },
@@ -127,21 +134,181 @@ class ChartPane {
   }
 
   _addSeries() {
+    const s = this._style;
     if (this._chartType === 'candle') {
       this._series = this._chart.addCandlestickSeries({
-        upColor: '#00c97a', downColor: '#ff4560',
-        borderUpColor: '#00c97a', borderDownColor: '#ff4560',
-        wickUpColor: '#00c97a',   wickDownColor: '#ff4560',
-        borderVisible: true, wickVisible: true,
+        upColor:        s.upColor,
+        downColor:      s.downColor,
+        borderUpColor:  s.upColor,
+        borderDownColor:s.downColor,
+        wickUpColor:    s.wickUpColor   || s.upColor,
+        wickDownColor:  s.wickDownColor || s.downColor,
+        borderVisible: true,
+        wickVisible:   true,
       });
     } else {
       this._series = this._chart.addLineSeries({
-        color: '#00d4aa', lineWidth: 2,
+        color: s.upColor, lineWidth: 2,
         crosshairMarkerVisible: true, crosshairMarkerRadius: 4,
-        crosshairMarkerBorderColor: '#00d4aa',
-        crosshairMarkerBackgroundColor: '#0e1117',
+        crosshairMarkerBorderColor: s.upColor,
+        crosshairMarkerBackgroundColor: s.bg,
       });
     }
+  }
+
+  // ── Chart style: presets + per-pane persistence ───────────────────────────
+  static STYLE_PRESETS = {
+    'TradingView': {
+      label: 'TradingView',
+      bg: '#131722', gridColor: '#1c2333', crossColor: '#3d4b6b',
+      labelBg: '#1c2333', borderColor: '#2a3250', textColor: '#b2b5be',
+      upColor: '#26a69a', downColor: '#ef5350',
+      wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+    },
+    'KofiFX': {
+      label: 'KofiFX Classic',
+      bg: '#0e1117', gridColor: '#1a1f2e', crossColor: '#444c6a',
+      labelBg: '#1e2535', borderColor: '#1e2535', textColor: '#7a8499',
+      upColor: '#00c97a', downColor: '#ff4560',
+      wickUpColor: '#00c97a', wickDownColor: '#ff4560',
+    },
+    'Midnight': {
+      label: 'Midnight',
+      bg: '#0a0a12', gridColor: '#131320', crossColor: '#363660',
+      labelBg: '#16162a', borderColor: '#1e1e38', textColor: '#8080b0',
+      upColor: '#4caf9f', downColor: '#e05c7a',
+      wickUpColor: '#4caf9f', wickDownColor: '#e05c7a',
+    },
+    'Slate': {
+      label: 'Slate',
+      bg: '#1a1a2e', gridColor: '#22223a', crossColor: '#44447a',
+      labelBg: '#22223a', borderColor: '#2e2e50', textColor: '#9090b8',
+      upColor: '#00b4d8', downColor: '#f77f00',
+      wickUpColor: '#00b4d8', wickDownColor: '#f77f00',
+    },
+  };
+
+  _loadStyle() {
+    const key = `kofifx_chart_style_${this.id ?? 0}`;
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) return { ...ChartPane.STYLE_PRESETS['TradingView'], ...JSON.parse(raw) };
+    } catch (_) {}
+    // Default: TradingView palette
+    return { ...ChartPane.STYLE_PRESETS['TradingView'] };
+  }
+
+  _saveStyle() {
+    const key = `kofifx_chart_style_${this.id ?? 0}`;
+    try { localStorage.setItem(key, JSON.stringify(this._style)); } catch (_) {}
+  }
+
+  _applyStyle(patch) {
+    Object.assign(this._style, patch);
+    // Live-update chart and series without reload
+    const s = this._style;
+    this._chart?.applyOptions({
+      layout: {
+        background: { type: 'solid', color: s.bg },
+        textColor: s.textColor,
+      },
+      grid: {
+        vertLines: { color: s.gridColor },
+        horzLines: { color: s.gridColor },
+      },
+      crosshair: {
+        vertLine: { color: s.crossColor, labelBackgroundColor: s.labelBg },
+        horzLine: { color: s.crossColor, labelBackgroundColor: s.labelBg },
+      },
+      rightPriceScale: { borderColor: s.borderColor, textColor: s.textColor },
+      timeScale: { borderColor: s.borderColor, textColor: s.textColor },
+    });
+    if (this._chartType === 'candle') {
+      this._series?.applyOptions({
+        upColor:         s.upColor,
+        downColor:       s.downColor,
+        borderUpColor:   s.upColor,
+        borderDownColor: s.downColor,
+        wickUpColor:     s.wickUpColor   || s.upColor,
+        wickDownColor:   s.wickDownColor || s.downColor,
+      });
+    }
+    this._saveStyle();
+    this._updateStylePanel();
+  }
+
+  // ── Chart style floating panel ────────────────────────────────────────────
+  _toggleStylePanel() {
+    if (!this._stylePanel) this._buildStylePanel();
+    const visible = this._stylePanel.style.display !== 'none';
+    this._stylePanel.style.display = visible ? 'none' : 'block';
+  }
+
+  _buildStylePanel() {
+    const panel = document.createElement('div');
+    panel.className = 'chart-style-panel';
+    this._q('.chart-container').appendChild(panel);
+    this._stylePanel = panel;
+    this._updateStylePanel();
+
+    // Delegate all input events
+    panel.addEventListener('input',  e => this._onStyleInput(e));
+    panel.addEventListener('change', e => this._onStyleInput(e));
+    panel.addEventListener('click',  e => {
+      const preset = e.target.closest('[data-preset]');
+      if (preset) this._applyStyle({ ...ChartPane.STYLE_PRESETS[preset.dataset.preset] });
+    });
+    // Close when clicking outside
+    document.addEventListener('click', e => {
+      if (!panel.contains(e.target) && !this._q('.pane-btn--style').contains(e.target)) {
+        panel.style.display = 'none';
+      }
+    });
+  }
+
+  _updateStylePanel() {
+    if (!this._stylePanel) return;
+    const s = this._style;
+    const presetBtns = Object.entries(ChartPane.STYLE_PRESETS).map(([k, p]) =>
+      `<button class="csp-preset-btn" data-preset="${k}"
+               style="border-color:${p.upColor}22;"
+               title="${p.label}">
+         <span style="background:${p.bg};border:1px solid ${p.upColor}33;"></span>
+         ${p.label}
+       </button>`
+    ).join('');
+
+    const col = (key, label, val) =>
+      `<label class="csp-row">
+         <span>${label}</span>
+         <input type="color" data-key="${key}" value="${val}"/>
+       </label>`;
+
+    this._stylePanel.innerHTML = `
+      <div class="csp-header">
+        <span>Chart Style</span>
+        <button onclick="this.closest('.chart-style-panel').style.display='none'"
+                style="background:none;border:none;color:#7a8499;cursor:pointer;font-size:14px;">✕</button>
+      </div>
+      <div class="csp-presets">${presetBtns}</div>
+      <div class="csp-divider"></div>
+      <div class="csp-section">CANDLES</div>
+      ${col('upColor',   'Bull colour',  s.upColor)}
+      ${col('downColor', 'Bear colour',  s.downColor)}
+      ${col('wickUpColor',   'Bull wick',  s.wickUpColor   || s.upColor)}
+      ${col('wickDownColor', 'Bear wick',  s.wickDownColor || s.downColor)}
+      <div class="csp-section">BACKGROUND</div>
+      ${col('bg',        'Background',   s.bg)}
+      ${col('gridColor', 'Grid lines',   s.gridColor)}
+      ${col('crossColor','Crosshair',    s.crossColor)}
+      ${col('textColor', 'Text',         s.textColor)}
+    `;
+  }
+
+  _onStyleInput(e) {
+    const key = e.target.dataset?.key;
+    if (!key || e.target.type !== 'color') return;
+    this._applyStyle({ [key]: e.target.value });
   }
 
   _toggleChartType() {

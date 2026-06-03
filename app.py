@@ -56,6 +56,7 @@ _PRE_WARM: list[tuple[str, str]] = [
     ("AUDUSD", "1h"), ("USDCAD", "1h"), ("SP500",  "1d"), ("US100",   "1d"),
     ("GBPJPY", "1h"), ("AUDJPY", "1h"), ("CADJPY", "1h"), ("USDCHF",  "1h"),
     ("NZDJPY", "1h"), ("DXY",    "1d"), ("GER40",  "1d"),
+    ("EURCHF", "1h"), ("CADCHF", "1h"), ("GBPNZD", "1h"), ("AUDNZD",  "1h"),
     ("EURUSD", "4h"), ("GBPUSD", "4h"), ("XAUUSD", "4h"),
     ("EURUSD", "1d"), ("USDJPY", "4h"),
 ]
