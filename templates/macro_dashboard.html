@@ -11,18 +11,18 @@
       theme: {
         extend: {
           colors: {
-            'bg-deep':     '#090b0f',
-            'bg-panel':    '#0e1117',
-            'bg-toolbar':  '#121620',
-            'bg-hover':    '#1a1f2e',
-            'border-dark': '#1e2535',
-            'border-light':'#252d3f',
-            'txt-primary': '#e2e8f0',
-            'txt-secondary':'#7a8499',
-            'txt-muted':   '#4a5368',
-            'accent':      '#00d4aa',
-            'bull':        '#00c97a',
-            'bear':        '#ff4560',
+            'bg-deep':     '#0b0c1e',
+            'bg-panel':    '#12132a',
+            'bg-toolbar':  '#0f1024',
+            'bg-hover':    '#1a1b35',
+            'border-dark': '#1e2040',
+            'border-light':'#272860',
+            'txt-primary': '#e8e9f8',
+            'txt-secondary':'#8590b8',
+            'txt-muted':   '#4a4f7a',
+            'accent':      '#7c3aed',
+            'bull':        '#00d68f',
+            'bear':        '#f43f5e',
           }
         }
       }
@@ -35,8 +35,8 @@
     ============================================================ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: #090b0f;
-      color: #e2e8f0;
+      background: #0b0c1e;
+      color: #e8e9f8;
       font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
       font-size: 14px;
       line-height: 1.5;
@@ -44,8 +44,8 @@
 
     /* Thin dark scrollbars */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0e1117; }
-    ::-webkit-scrollbar-thumb { background: #252d3f; border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: #12132a; }
+    ::-webkit-scrollbar-thumb { background: #272860; border-radius: 3px; }
 
     /* ============================================================
        TOP BAR
@@ -54,35 +54,35 @@
       position: sticky;
       top: 0;
       z-index: 200;
-      background: #121620;
-      border-bottom: 1px solid #1e2535;
+      background: #0f1024;
+      border-bottom: 1px solid #1e2040;
     }
 
     /* Session pill glow when active */
     .session-pill {
-      border: 1px solid #252d3f;
+      border: 1px solid #272860;
       border-radius: 9999px;
       padding: 2px 10px;
       font-size: 11px;
       font-weight: 600;
-      color: #4a5368;
+      color: #4a4f7a;
       transition: box-shadow 0.3s, color 0.3s, border-color 0.3s, background 0.3s;
       cursor: default;
       user-select: none;
     }
     .session-pill.active {
-      color: #00d4aa;
-      border-color: #00d4aa;
-      background: #00d4aa18;
-      box-shadow: 0 0 8px #00d4aa88;
+      color: #7c3aed;
+      border-color: #7c3aed;
+      background: #7c3aed18;
+      box-shadow: 0 0 8px #7c3aed88;
     }
 
     /* ============================================================
        PANEL CARDS
     ============================================================ */
     .panel {
-      background: #0e1117;
-      border: 1px solid #1e2535;
+      background: #12132a;
+      border: 1px solid #1e2040;
       border-radius: 8px;
     }
     .panel-title {
@@ -90,7 +90,7 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #7a8499;
+      color: #8590b8;
     }
 
     /* ============================================================
@@ -99,7 +99,7 @@
     .live-dot {
       width: 8px; height: 8px;
       border-radius: 50%;
-      background: #00c97a;
+      background: #00d68f;
       display: inline-block;
       animation: pulse-live 1.5s infinite;
     }
@@ -125,20 +125,20 @@
        CALENDAR TABLE
     ============================================================ */
     .cal-row { transition: background 0.15s; }
-    .cal-row:hover { background: #1a1f2e; }
+    .cal-row:hover { background: #1a1b35; }
 
     /* Flashing red when < 1 min */
     .flash-red { animation: flash 0.6s infinite alternate; }
     @keyframes flash {
-      from { color: #ff4560; }
-      to   { color: #ff456066; }
+      from { color: #f43f5e; }
+      to   { color: #f43f5e66; }
     }
 
     /* ============================================================
        COT BAR CHART
     ============================================================ */
     .cot-bar-bg {
-      background: #1e2535;
+      background: #1e2040;
       border-radius: 3px;
       height: 8px;
       overflow: hidden;
@@ -149,14 +149,14 @@
        SCANNER TABLE
     ============================================================ */
     .scanner-row { transition: background 0.15s; }
-    .scanner-row:hover { background: #1a1f2e; }
-    .scanner-row.bull-row:hover { background: #00c97a12; }
-    .scanner-row.bear-row:hover { background: #ff456012; }
+    .scanner-row:hover { background: #1a1b35; }
+    .scanner-row.bull-row:hover { background: #00d68f12; }
+    .scanner-row.bear-row:hover { background: #f43f5e12; }
 
     /* Sort arrow indicator */
     .sort-arrow::after { content: ' ↕'; opacity: 0.4; font-size: 10px; }
-    .sort-asc::after  { content: ' ↑'; opacity: 0.9; color: #00d4aa; font-size: 10px; }
-    .sort-desc::after { content: ' ↓'; opacity: 0.9; color: #00d4aa; font-size: 10px; }
+    .sort-asc::after  { content: ' ↑'; opacity: 0.9; color: #7c3aed; font-size: 10px; }
+    .sort-desc::after { content: ' ↓'; opacity: 0.9; color: #7c3aed; font-size: 10px; }
 
     /* ============================================================
        PAIR FOCUS CARD ANIMATION
@@ -182,18 +182,18 @@
 
     /* Tab active state */
     .broker-tab.active {
-      border-bottom: 2px solid #00d4aa;
-      color: #e2e8f0;
+      border-bottom: 2px solid #7c3aed;
+      color: #e8e9f8;
     }
     .broker-tab {
       border-bottom: 2px solid transparent;
-      color: #7a8499;
+      color: #8590b8;
       cursor: pointer;
       padding: 6px 16px;
       font-size: 13px;
       transition: color 0.2s, border-color 0.2s;
     }
-    .broker-tab:hover { color: #e2e8f0; }
+    .broker-tab:hover { color: #e8e9f8; }
 
     /* ============================================================
        TOAST NOTIFICATION SYSTEM
@@ -209,15 +209,15 @@
       max-width: 340px;
     }
     .toast {
-      background: #0e1117;
-      border: 1px solid #1e2535;
+      background: #12132a;
+      border: 1px solid #1e2040;
       border-radius: 8px;
       padding: 12px 14px;
       position: relative;
       animation: slide-in 0.3s ease forwards;
       pointer-events: all;
     }
-    .toast.toast-high   { border-left: 3px solid #ff4560; }
+    .toast.toast-high   { border-left: 3px solid #f43f5e; }
     .toast.toast-medium { border-left: 3px solid #f0b429; }
     .toast.dismissing   { animation: fade-out 0.3s ease forwards; }
     @keyframes slide-in {
@@ -240,19 +240,19 @@
       letter-spacing: 0.05em;
     }
     input[type="text"], input[type="password"], select {
-      background: #121620;
-      border: 1px solid #1e2535;
+      background: #0f1024;
+      border: 1px solid #1e2040;
       border-radius: 6px;
-      color: #e2e8f0;
+      color: #e8e9f8;
       padding: 6px 10px;
       outline: none;
       font-size: 13px;
       transition: border-color 0.2s;
     }
     input[type="text"]:focus, input[type="password"]:focus, select:focus {
-      border-color: #00d4aa;
+      border-color: #7c3aed;
     }
-    select option { background: #121620; }
+    select option { background: #0f1024; }
 
     button {
       cursor: pointer;
@@ -322,7 +322,7 @@
         <span
           id="broker-status-badge"
           class="tag-pill"
-          style="background:#1e2535; color:#7a8499;"
+          style="background:#1e2040; color:#8590b8;"
         >DISCONNECTED</span>
       </div>
       <div class="flex items-center gap-3">
@@ -330,7 +330,7 @@
           id="broker-connect-btn"
           onclick="event.stopPropagation(); openBrokerPanel()"
           class="text-xs font-semibold px-3 py-1 rounded-full"
-          style="background:#00d4aa22; color:#00d4aa; border:1px solid #00d4aa44;"
+          style="background:#7c3aed22; color:#7c3aed; border:1px solid #7c3aed44;"
         >Connect</button>
         <span id="broker-chevron" class="text-txt-muted text-xs transition-transform">▼</span>
       </div>
@@ -363,12 +363,12 @@
             <button
               onclick="metaConnect()"
               class="px-4 py-2 rounded-md text-sm font-semibold"
-              style="background:#00d4aa; color:#090b0f;"
+              style="background:#7c3aed; color:#0b0c1e;"
             >Test Connection</button>
             <!-- Spinner (hidden by default) -->
             <span id="meta-spinner" class="hidden text-xs text-txt-muted animate-pulse">Connecting…</span>
             <!-- Status dot -->
-            <span id="meta-status-dot" class="w-2 h-2 rounded-full" style="background:#4a5368;"></span>
+            <span id="meta-status-dot" class="w-2 h-2 rounded-full" style="background:#4a4f7a;"></span>
             <span id="meta-status-txt" class="text-xs text-txt-muted">Not connected</span>
           </div>
 
@@ -491,14 +491,14 @@
         <svg viewBox="0 0 200 110" width="200" height="110">
           <!-- Background arc -->
           <path d="M 10 100 A 90 90 0 0 1 190 100"
-            fill="none" stroke="#1e2535" stroke-width="14" stroke-linecap="round"/>
+            fill="none" stroke="#1e2040" stroke-width="14" stroke-linecap="round"/>
           <!-- Coloured foreground arc — stroke-dasharray = π*90 ≈ 282.74 -->
           <path id="gauge-arc"
             d="M 10 100 A 90 90 0 0 1 190 100"
             fill="none" stroke="#f0b429" stroke-width="14" stroke-linecap="round"
             stroke-dasharray="282.74" stroke-dashoffset="282.74"/>
           <!-- Score text -->
-          <text x="100" y="88" text-anchor="middle" fill="#e2e8f0" font-size="26" font-weight="700" font-family="monospace">+11</text>
+          <text x="100" y="88" text-anchor="middle" fill="#e8e9f8" font-size="26" font-weight="700" font-family="monospace">+11</text>
           <text x="100" y="105" text-anchor="middle" fill="#f0b429" font-size="11" font-weight="600" letter-spacing="1">NEUTRAL</text>
         </svg>
         <div class="flex justify-between w-full max-w-[200px] mt-1 text-xs text-txt-muted">
@@ -604,8 +604,8 @@
           <span>Confidence</span>
           <span id="conf-label">87%</span>
         </div>
-        <div class="h-2 rounded-full" style="background:#1e2535; overflow:hidden;">
-          <div id="conf-bar" class="h-full rounded-full" style="background:linear-gradient(90deg,#00d4aa,#00c97a);"></div>
+        <div class="h-2 rounded-full" style="background:#1e2040; overflow:hidden;">
+          <div id="conf-bar" class="h-full rounded-full" style="background:linear-gradient(90deg,#7c3aed,#00d68f);"></div>
         </div>
       </div>
 
@@ -615,7 +615,7 @@
 
         <!-- Each line: tag + currency + description -->
         <div class="flex items-start gap-2 text-xs">
-          <span class="tag-pill mt-0.5" style="background:#00c97a22;color:#00c97a;">STRONG</span>
+          <span class="tag-pill mt-0.5" style="background:#00d68f22;color:#00d68f;">STRONG</span>
           <div><span class="font-semibold text-txt-primary">USD</span> <span class="text-txt-secondary">— Rate differential supports USD across the board</span></div>
         </div>
         <div class="flex items-start gap-2 text-xs">
@@ -623,27 +623,27 @@
           <div><span class="font-semibold text-txt-primary">JPY</span> <span class="text-txt-secondary">— −115k net short; reversal risk elevated if BoJ signals</span></div>
         </div>
         <div class="flex items-start gap-2 text-xs">
-          <span class="tag-pill mt-0.5" style="background:#ff456022;color:#ff4560;">BEARISH</span>
+          <span class="tag-pill mt-0.5" style="background:#f43f5e22;color:#f43f5e;">BEARISH</span>
           <div><span class="font-semibold text-txt-primary">CAD</span> <span class="text-txt-secondary">— −69k net short; CAD weakness likely to persist near-term</span></div>
         </div>
         <div class="flex items-start gap-2 text-xs">
-          <span class="tag-pill mt-0.5" style="background:#ff456022;color:#ff4560;">EXTREME LONG</span>
+          <span class="tag-pill mt-0.5" style="background:#f43f5e22;color:#f43f5e;">EXTREME LONG</span>
           <div><span class="font-semibold text-txt-primary">NATGAS</span> <span class="text-txt-secondary">— +253k; fade risk on any supply data</span></div>
         </div>
         <div class="flex items-start gap-2 text-xs">
-          <span class="tag-pill mt-0.5" style="background:#00c97a22;color:#00c97a;">BULLISH</span>
+          <span class="tag-pill mt-0.5" style="background:#00d68f22;color:#00d68f;">BULLISH</span>
           <div><span class="font-semibold text-txt-primary">GOLD</span> <span class="text-txt-secondary">— +154k net long; macro safe-haven demand intact</span></div>
         </div>
         <div class="flex items-start gap-2 text-xs">
-          <span class="tag-pill mt-0.5" style="background:#ff456022;color:#ff4560;">BEARISH</span>
+          <span class="tag-pill mt-0.5" style="background:#f43f5e22;color:#f43f5e;">BEARISH</span>
           <div><span class="font-semibold text-txt-primary">EUR</span> <span class="text-txt-secondary">— Modest net long but momentum fading on ECB hold</span></div>
         </div>
         <div class="flex items-start gap-2 text-xs">
-          <span class="tag-pill mt-0.5" style="background:#7a849922;color:#7a8499;">NEUTRAL</span>
+          <span class="tag-pill mt-0.5" style="background:#8590b822;color:#8590b8;">NEUTRAL</span>
           <div><span class="font-semibold text-txt-primary">GBP</span> <span class="text-txt-secondary">— −61k net short; crowded short, watch for squeeze</span></div>
         </div>
         <div class="flex items-start gap-2 text-xs">
-          <span class="tag-pill mt-0.5" style="background:#00c97a22;color:#00c97a;">BULLISH</span>
+          <span class="tag-pill mt-0.5" style="background:#00d68f22;color:#00d68f;">BULLISH</span>
           <div><span class="font-semibold text-txt-primary">AUD</span> <span class="text-txt-secondary">— Commodity demand supports mild AUD longs</span></div>
         </div>
       </div>
@@ -667,7 +667,7 @@
         <button
           onclick="requestNotifPermission()"
           class="px-3 py-1 rounded text-xs font-semibold"
-          style="background:#f0b429; color:#090b0f;"
+          style="background:#f0b429; color:#0b0c1e;"
         >Enable Notifications</button>
         <button onclick="document.getElementById('notif-banner').classList.add('hidden')" class="text-txt-muted hover:text-txt-primary">✕</button>
       </div>
@@ -895,43 +895,43 @@
         <!-- Each item: label, bar, z-score -->
         <div class="flex items-center gap-3">
           <span class="w-20 shrink-0 text-txt-secondary">JPY Short</span>
-          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2535;">
-            <div class="h-full rounded-full" style="width:92%; background:#ff4560;"></div>
+          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2040;">
+            <div class="h-full rounded-full" style="width:92%; background:#f43f5e;"></div>
           </div>
           <span class="w-10 text-right text-bear font-mono">−2.8σ</span>
         </div>
         <div class="flex items-center gap-3">
           <span class="w-20 shrink-0 text-txt-secondary">NATGAS Long</span>
-          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2535;">
-            <div class="h-full rounded-full" style="width:88%; background:#ff4560;"></div>
+          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2040;">
+            <div class="h-full rounded-full" style="width:88%; background:#f43f5e;"></div>
           </div>
           <span class="w-10 text-right text-bear font-mono">+2.6σ</span>
         </div>
         <div class="flex items-center gap-3">
           <span class="w-20 shrink-0 text-txt-secondary">GBP Short</span>
-          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2535;">
+          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2040;">
             <div class="h-full rounded-full" style="width:75%; background:#f0b429;"></div>
           </div>
           <span class="w-10 text-right font-mono" style="color:#f0b429;">−2.1σ</span>
         </div>
         <div class="flex items-center gap-3">
           <span class="w-20 shrink-0 text-txt-secondary">GOLD Long</span>
-          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2535;">
+          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2040;">
             <div class="h-full rounded-full" style="width:70%; background:#f0b429;"></div>
           </div>
           <span class="w-10 text-right font-mono" style="color:#f0b429;">+1.9σ</span>
         </div>
         <div class="flex items-center gap-3">
           <span class="w-20 shrink-0 text-txt-secondary">CAD Short</span>
-          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2535;">
+          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2040;">
             <div class="h-full rounded-full" style="width:62%; background:#f0b429;"></div>
           </div>
           <span class="w-10 text-right font-mono" style="color:#f0b429;">−1.7σ</span>
         </div>
         <div class="flex items-center gap-3">
           <span class="w-20 shrink-0 text-txt-secondary">USD Long</span>
-          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2535;">
-            <div class="h-full rounded-full" style="width:55%; background:#00c97a;"></div>
+          <div class="flex-1 h-2 rounded-full overflow-hidden" style="background:#1e2040;">
+            <div class="h-full rounded-full" style="width:55%; background:#00d68f;"></div>
           </div>
           <span class="w-10 text-right text-bull font-mono">+1.5σ</span>
         </div>
@@ -945,50 +945,50 @@
       <div class="space-y-2 text-xs">
         <div class="flex items-center justify-between py-1 border-b border-border-dark/40">
           <span class="text-txt-secondary w-20">USD</span>
-          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
-            <div class="h-full" style="width:70%; background:#00c97a; margin-left:30%;"></div>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2040;">
+            <div class="h-full" style="width:70%; background:#00d68f; margin-left:30%;"></div>
           </div>
           <span class="font-mono text-bull w-16 text-right">+18,400</span>
         </div>
         <div class="flex items-center justify-between py-1 border-b border-border-dark/40">
           <span class="text-txt-secondary w-20">JPY</span>
-          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
-            <div class="h-full" style="width:40%; background:#ff4560;"></div>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2040;">
+            <div class="h-full" style="width:40%; background:#f43f5e;"></div>
           </div>
           <span class="font-mono text-bear w-16 text-right">−12,200</span>
         </div>
         <div class="flex items-center justify-between py-1 border-b border-border-dark/40">
           <span class="text-txt-secondary w-20">GOLD</span>
-          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
-            <div class="h-full" style="width:55%; background:#00c97a; margin-left:30%;"></div>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2040;">
+            <div class="h-full" style="width:55%; background:#00d68f; margin-left:30%;"></div>
           </div>
           <span class="font-mono text-bull w-16 text-right">+9,800</span>
         </div>
         <div class="flex items-center justify-between py-1 border-b border-border-dark/40">
           <span class="text-txt-secondary w-20">GBP</span>
-          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
-            <div class="h-full" style="width:35%; background:#ff4560;"></div>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2040;">
+            <div class="h-full" style="width:35%; background:#f43f5e;"></div>
           </div>
           <span class="font-mono text-bear w-16 text-right">−8,500</span>
         </div>
         <div class="flex items-center justify-between py-1 border-b border-border-dark/40">
           <span class="text-txt-secondary w-20">WTI OIL</span>
-          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
-            <div class="h-full" style="width:30%; background:#ff4560;"></div>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2040;">
+            <div class="h-full" style="width:30%; background:#f43f5e;"></div>
           </div>
           <span class="font-mono text-bear w-16 text-right">−7,100</span>
         </div>
         <div class="flex items-center justify-between py-1 border-b border-border-dark/40">
           <span class="text-txt-secondary w-20">EUR</span>
-          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
-            <div class="h-full" style="width:48%; background:#00c97a; margin-left:30%;"></div>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2040;">
+            <div class="h-full" style="width:48%; background:#00d68f; margin-left:30%;"></div>
           </div>
           <span class="font-mono text-bull w-16 text-right">+5,300</span>
         </div>
         <div class="flex items-center justify-between py-1">
           <span class="text-txt-secondary w-20">CAD</span>
-          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2535;">
-            <div class="h-full" style="width:25%; background:#ff4560;"></div>
+          <div class="flex-1 mx-3 h-1.5 rounded overflow-hidden" style="background:#1e2040;">
+            <div class="h-full" style="width:25%; background:#f43f5e;"></div>
           </div>
           <span class="font-mono text-bear w-16 text-right">−4,900</span>
         </div>
@@ -1007,8 +1007,8 @@
       <!-- Tech -->
       <div class="panel p-3 text-center">
         <p class="text-txt-muted mb-1">Technology</p>
-        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2535;">
-          <div class="h-full rounded" style="width:78%; background:#00c97a;"></div>
+        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2040;">
+          <div class="h-full rounded" style="width:78%; background:#00d68f;"></div>
         </div>
         <p class="text-bull font-semibold">OVERWEIGHT</p>
         <p class="text-txt-muted text-xs mt-0.5">Risk-On</p>
@@ -1017,8 +1017,8 @@
       <!-- Financials -->
       <div class="panel p-3 text-center">
         <p class="text-txt-muted mb-1">Financials</p>
-        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2535;">
-          <div class="h-full rounded" style="width:62%; background:#00c97a;"></div>
+        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2040;">
+          <div class="h-full rounded" style="width:62%; background:#00d68f;"></div>
         </div>
         <p class="text-bull font-semibold">OVERWEIGHT</p>
         <p class="text-txt-muted text-xs mt-0.5">Rate Sensitive</p>
@@ -1027,7 +1027,7 @@
       <!-- Energy -->
       <div class="panel p-3 text-center">
         <p class="text-txt-muted mb-1">Energy</p>
-        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2535;">
+        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2040;">
           <div class="h-full rounded" style="width:45%; background:#f0b429;"></div>
         </div>
         <p class="font-semibold" style="color:#f0b429;">NEUTRAL</p>
@@ -1037,8 +1037,8 @@
       <!-- Healthcare -->
       <div class="panel p-3 text-center">
         <p class="text-txt-muted mb-1">Healthcare</p>
-        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2535;">
-          <div class="h-full rounded" style="width:55%; background:#7a8499;"></div>
+        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2040;">
+          <div class="h-full rounded" style="width:55%; background:#8590b8;"></div>
         </div>
         <p class="text-txt-secondary font-semibold">NEUTRAL</p>
         <p class="text-txt-muted text-xs mt-0.5">Defensive</p>
@@ -1047,8 +1047,8 @@
       <!-- Utilities -->
       <div class="panel p-3 text-center">
         <p class="text-txt-muted mb-1">Utilities</p>
-        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2535;">
-          <div class="h-full rounded" style="width:30%; background:#ff4560;"></div>
+        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2040;">
+          <div class="h-full rounded" style="width:30%; background:#f43f5e;"></div>
         </div>
         <p class="text-bear font-semibold">UNDERWEIGHT</p>
         <p class="text-txt-muted text-xs mt-0.5">Risk-Off</p>
@@ -1057,7 +1057,7 @@
       <!-- Gold / Safe Havens -->
       <div class="panel p-3 text-center">
         <p class="text-txt-muted mb-1">Gold / Safe-Haven</p>
-        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2535;">
+        <div class="h-1.5 rounded overflow-hidden mb-2" style="background:#1e2040;">
           <div class="h-full rounded" style="width:68%; background:#f0b429;"></div>
         </div>
         <p class="font-semibold" style="color:#f0b429;">WATCH</p>
@@ -1076,13 +1076,13 @@
       <div style="display:flex; align-items:center; gap:10px;">
         <span class="panel-title" style="margin:0;">Forex News</span>
         <span class="live-dot"></span>
-        <span style="font-size:10px; color:#7a8499;">ForexFactory · FXStreet</span>
+        <span style="font-size:10px; color:#8590b8;">ForexFactory · FXStreet</span>
       </div>
-      <button onclick="fetchNews()" style="font-size:11px; color:#7a8499; background:none; border:1px solid #1e2535; border-radius:4px; padding:3px 10px; cursor:pointer;">↻ Refresh</button>
+      <button onclick="fetchNews()" style="font-size:11px; color:#8590b8; background:none; border:1px solid #1e2040; border-radius:4px; padding:3px 10px; cursor:pointer;">↻ Refresh</button>
     </div>
     <div id="news-grid"
          style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:10px;">
-      <div style="color:#4a5368; font-size:12px; padding:20px; grid-column:1/-1;">Loading news…</div>
+      <div style="color:#4a4f7a; font-size:12px; padding:20px; grid-column:1/-1;">Loading news…</div>
     </div>
   </div>
 
@@ -1315,7 +1315,7 @@ async function autoConnectIfConfigured() {
     tokenInput.disabled = true;
     tokenInput.style.opacity = '0.6';
     const hint = document.createElement('p');
-    hint.style.cssText = 'font-size:11px; color:#00d4aa; margin-top:4px;';
+    hint.style.cssText = 'font-size:11px; color:#7c3aed; margin-top:4px;';
     hint.textContent = '✓ Server token active';
     tokenInput.parentElement.appendChild(hint);
 
@@ -1344,7 +1344,7 @@ async function populateAccountsDropdown() {
     const container = oldInput.parentElement;
     const sel = document.createElement('select');
     sel.id = 'meta-account-id';
-    sel.style.cssText = 'width:100%; background:#121620; border:1px solid #1e2535; border-radius:6px; color:#e2e8f0; padding:6px 10px; font-size:13px;';
+    sel.style.cssText = 'width:100%; background:#0f1024; border:1px solid #1e2040; border-radius:6px; color:#e8e9f8; padding:6px 10px; font-size:13px;';
 
     const blank = document.createElement('option');
     blank.value = '';
@@ -1409,7 +1409,7 @@ async function metaConnect(useServerToken = false) {
 
     // Success — fetch account data
     setMetaDot('connected');
-    setBrokerBadge('CONNECTED', '#00c97a22', '#00c97a');
+    setBrokerBadge('CONNECTED', '#00d68f22', '#00d68f');
     await fetchMetaAccount();
     startPositionPolling();
 
@@ -1417,7 +1417,7 @@ async function metaConnect(useServerToken = false) {
     document.getElementById('meta-spinner').classList.add('hidden');
     showMetaError(`Network error: ${err.message}`);
     setMetaDot('error');
-    setBrokerBadge('ERROR', '#ff456022', '#ff4560');
+    setBrokerBadge('ERROR', '#f43f5e22', '#f43f5e');
   }
 }
 
@@ -1438,7 +1438,7 @@ async function fetchMetaAccount() {
 function renderMetaCards(d) {
   const pnl = (d.dailyPnl || 0);
   const pnlStr = pnl >= 0 ? `▲$${pnl.toFixed(2)}` : `▼$${Math.abs(pnl).toFixed(2)}`;
-  const pnlColor = pnl >= 0 ? '#00c97a' : '#ff4560';
+  const pnlColor = pnl >= 0 ? '#00d68f' : '#f43f5e';
   const fields = [
     ['Balance',      `$${(d.balance||0).toFixed(2)}`    ],
     ['Equity',       `$${(d.equity||0).toFixed(2)}`     ],
@@ -1476,9 +1476,9 @@ function renderPositions(positions) {
   }
   tbody.innerHTML = positions.map(p => {
     const pnl = p.profit || 0;
-    const pnlColor = pnl >= 0 ? '#00c97a' : '#ff4560';
+    const pnlColor = pnl >= 0 ? '#00d68f' : '#f43f5e';
     const pnlStr  = pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`;
-    const typeColor = p.type === 'BUY' ? '#00c97a' : '#ff4560';
+    const typeColor = p.type === 'BUY' ? '#00d68f' : '#f43f5e';
     return `<tr class="border-b border-border-dark/40">
       <td class="py-1 pr-3 font-mono font-semibold">${p.symbol || '--'}</td>
       <td class="pr-3 font-semibold" style="color:${typeColor};">${p.type || '--'}</td>
@@ -1503,10 +1503,10 @@ function setMetaDot(state) {
   const txt = document.getElementById('meta-status-txt');
   const states = {
     connecting: ['#f0b429', 'Connecting…'],
-    connected:  ['#00c97a', 'Connected'],
-    error:      ['#ff4560', 'Connection failed'],
+    connected:  ['#00d68f', 'Connected'],
+    error:      ['#f43f5e', 'Connection failed'],
   };
-  const [color, label] = states[state] || ['#4a5368', 'Not connected'];
+  const [color, label] = states[state] || ['#4a4f7a', 'Not connected'];
   dot.style.background = color;
   txt.textContent = label;
   txt.style.color = color;
@@ -1605,7 +1605,7 @@ async function fetchRoroTiles() {
       const chgPct = parseFloat(item.change_pct || item.changePct || 0);
       priceEl.textContent = formatPrice(sym, item.price);
       chgEl.textContent   = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
-      chgEl.style.color   = chgPct >= 0 ? '#00c97a' : '#ff4560';
+      chgEl.style.color   = chgPct >= 0 ? '#00d68f' : '#f43f5e';
     });
   } catch (_) {
     // Gracefully leave tiles as '--' on error
@@ -1740,7 +1740,7 @@ function renderCalendar() {
     const ccy    = (ev.currency || ev.country || '').toUpperCase();
     const flag   = flagFor(ccy);
     const impact = (ev.impact || ev.importance || 'low').toLowerCase();
-    const dotColor = impact === 'high' ? '#ff4560' : impact === 'medium' ? '#f0b429' : '#7a8499';
+    const dotColor = impact === 'high' ? '#f43f5e' : impact === 'medium' ? '#f0b429' : '#8590b8';
     const impactDot = `<span style="color:${dotColor}; font-size:16px; line-height:1;">●</span>`;
     const diffMs = evMs - nowMs;
     let countdown = '';
@@ -1837,7 +1837,7 @@ function renderCOT(containerId, data) {
   container.innerHTML = data.map(d => {
     const isPos  = d.value >= 0;
     const pct    = (Math.abs(d.value) / maxVal * 100).toFixed(1);
-    const color  = isPos ? '#00c97a' : '#ff4560';
+    const color  = isPos ? '#00d68f' : '#f43f5e';
     const label  = (isPos ? '+' : '') + d.value.toFixed(1) + 'k';
     return `<div class="flex items-center gap-3 text-xs">
       <span class="w-16 shrink-0 text-txt-secondary text-right">${d.label}</span>
@@ -1937,16 +1937,16 @@ function renderScannerTable() {
     const rowClass = d.price == null ? '' : (isPos ? 'bull-row' : 'bear-row');
     const priceStr = d.price  != null ? formatScannerPrice(d.symbol, d.price) : '<span class="text-txt-muted">—</span>';
     const chgStr   = d.change != null
-      ? `<span style="color:${isPos?'#00c97a':'#ff4560'};">${isPos?'+':''}${d.change.toFixed(5)}</span>`
+      ? `<span style="color:${isPos?'#00d68f':'#f43f5e'};">${isPos?'+':''}${d.change.toFixed(5)}</span>`
       : '<span class="text-txt-muted">—</span>';
     const chgPctStr = d.changePct != null
-      ? `<span style="color:${isPos?'#00c97a':'#ff4560'};">${isPos?'+':''}${d.changePct.toFixed(2)}%</span>`
+      ? `<span style="color:${isPos?'#00d68f':'#f43f5e'};">${isPos?'+':''}${d.changePct.toFixed(2)}%</span>`
       : '<span class="text-txt-muted">—</span>';
     const dirStr   = d.direction != null
-      ? `<span style="color:${d.direction==='BULL'?'#00c97a':'#ff4560'};">${d.direction==='BULL'?'▲':'▼'} ${d.direction}</span>`
+      ? `<span style="color:${d.direction==='BULL'?'#00d68f':'#f43f5e'};">${d.direction==='BULL'?'▲':'▼'} ${d.direction}</span>`
       : '<span class="text-txt-muted">—</span>';
     const tickIcon = d.tick === 'up' ? '↑' : d.tick === 'down' ? '↓' : '—';
-    const tickColor = d.tick === 'up' ? '#00c97a' : d.tick === 'down' ? '#ff4560' : '#7a8499';
+    const tickColor = d.tick === 'up' ? '#00d68f' : d.tick === 'down' ? '#f43f5e' : '#8590b8';
     return `<tr class="scanner-row ${rowClass} border-b border-border-dark/30">
       <td class="py-1.5 pr-3 font-mono font-semibold text-txt-primary">${d.symbol}</td>
       <td class="text-right pr-3 font-mono">${priceStr}</td>
@@ -2022,7 +2022,7 @@ function showToast(currency, eventName, countdown, impact = 'high') {
   }
   const flag = flagFor(currency);
   const borderClass = impact === 'high' ? 'toast-high' : 'toast-medium';
-  const timeColor   = impact === 'high' ? '#ff4560' : '#f0b429';
+  const timeColor   = impact === 'high' ? '#f43f5e' : '#f0b429';
 
   const toast = document.createElement('div');
   toast.className = `toast ${borderClass}`;
@@ -2063,7 +2063,7 @@ async function fetchNews() {
     const articles = await res.json();
 
     if (!articles.length) {
-      grid.innerHTML = '<div style="color:#4a5368;font-size:12px;padding:20px;grid-column:1/-1;">No news available right now.</div>';
+      grid.innerHTML = '<div style="color:#4a4f7a;font-size:12px;padding:20px;grid-column:1/-1;">No news available right now.</div>';
       return;
     }
 
@@ -2078,27 +2078,27 @@ async function fetchNews() {
         timeStr = `${dd} ${hh}:${mm} GMT`;
       } catch(_) { timeStr = a.pubDate; }
 
-      const srcColor = a.source === 'ForexFactory' ? '#f0b429' : '#00d4aa';
+      const srcColor = a.source === 'ForexFactory' ? '#f0b429' : '#7c3aed';
       const title = (a.title || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const link  = a.link ? `href="${a.link}" target="_blank" rel="noopener"` : '';
 
       return `
         <a ${link} style="display:block; text-decoration:none;
-                           background:#121620; border:1px solid #1e2535;
+                           background:#0f1024; border:1px solid #1e2040;
                            border-radius:6px; padding:12px 14px;
                            transition:border-color 0.14s;"
-           onmouseover="this.style.borderColor='#252d3f'"
-           onmouseout="this.style.borderColor='#1e2535'">
+           onmouseover="this.style.borderColor='#272860'"
+           onmouseout="this.style.borderColor='#1e2040'">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <span style="font-size:10px; font-weight:700; color:${srcColor}; letter-spacing:0.06em;">${a.source.toUpperCase()}</span>
-            <span style="font-size:10px; color:#4a5368; font-family:monospace;">${timeStr}</span>
+            <span style="font-size:10px; color:#4a4f7a; font-family:monospace;">${timeStr}</span>
           </div>
-          <p style="font-size:12px; color:#e2e8f0; line-height:1.4; margin:0;">${title}</p>
+          <p style="font-size:12px; color:#e8e9f8; line-height:1.4; margin:0;">${title}</p>
         </a>`;
     }).join('');
 
   } catch (err) {
-    grid.innerHTML = `<div style="color:#4a5368;font-size:12px;padding:20px;grid-column:1/-1;">News unavailable: ${err.message}</div>`;
+    grid.innerHTML = `<div style="color:#4a4f7a;font-size:12px;padding:20px;grid-column:1/-1;">News unavailable: ${err.message}</div>`;
   }
 }
 

@@ -164,6 +164,13 @@ class ChartPane {
 
   // ── Chart style: presets + per-pane persistence ───────────────────────────
   static STYLE_PRESETS = {
+    'Evedex': {
+      label: 'Evedex (Default)',
+      bg: '#0b0c1e', gridColor: '#141528', crossColor: '#3a3b6a',
+      labelBg: '#1a1b35', borderColor: '#1e2040', textColor: '#8590b8',
+      upColor: '#00d68f', downColor: '#f43f5e',
+      wickUpColor: '#00d68f', wickDownColor: '#f43f5e',
+    },
     'TradingView': {
       label: 'TradingView',
       bg: '#131722', gridColor: '#1c2333', crossColor: '#3d4b6b',
@@ -185,23 +192,16 @@ class ChartPane {
       upColor: '#4caf9f', downColor: '#e05c7a',
       wickUpColor: '#4caf9f', wickDownColor: '#e05c7a',
     },
-    'Slate': {
-      label: 'Slate',
-      bg: '#1a1a2e', gridColor: '#22223a', crossColor: '#44447a',
-      labelBg: '#22223a', borderColor: '#2e2e50', textColor: '#9090b8',
-      upColor: '#00b4d8', downColor: '#f77f00',
-      wickUpColor: '#00b4d8', wickDownColor: '#f77f00',
-    },
   };
 
   _loadStyle() {
     const key = `kofifx_chart_style_${this.id ?? 0}`;
     try {
       const raw = localStorage.getItem(key);
-      if (raw) return { ...ChartPane.STYLE_PRESETS['TradingView'], ...JSON.parse(raw) };
+      if (raw) return { ...ChartPane.STYLE_PRESETS['Evedex'], ...JSON.parse(raw) };
     } catch (_) {}
-    // Default: TradingView palette
-    return { ...ChartPane.STYLE_PRESETS['TradingView'] };
+    // Default: Evedex palette
+    return { ...ChartPane.STYLE_PRESETS['Evedex'] };
   }
 
   _saveStyle() {

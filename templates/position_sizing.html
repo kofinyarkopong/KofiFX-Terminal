@@ -10,16 +10,16 @@
       theme: {
         extend: {
           colors: {
-            deep:    '#090b0f',
-            surface: '#0e1117',
-            panel:   '#121620',
-            hover:   '#1a1f2e',
-            'b':     '#1e2535',
-            'bl':    '#252d3f',
-            accent:  '#00d4aa',
-            muted:   '#7a8499',
-            bull:    '#00c97a',
-            bear:    '#ff4560',
+            deep:    '#0b0c1e',
+            surface: '#12132a',
+            panel:   '#0f1024',
+            hover:   '#1a1b35',
+            'b':     '#1e2040',
+            'bl':    '#272860',
+            accent:  '#7c3aed',
+            muted:   '#8590b8',
+            bull:    '#00d68f',
+            bear:    '#f43f5e',
           }
         }
       }
@@ -29,8 +29,8 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #090b0f;
-      color: #e2e8f0;
+      background: #0b0c1e;
+      color: #e8e9f8;
       font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
       font-size: 13px;
       min-height: 100vh;
@@ -40,9 +40,9 @@
     .fx-input {
       display: block;
       width: 100%;
-      background: #121620;
-      border: 1px solid #1e2535;
-      color: #e2e8f0;
+      background: #0f1024;
+      border: 1px solid #1e2040;
+      color: #e8e9f8;
       border-radius: 5px;
       padding: 7px 10px;
       font-size: 13px;
@@ -52,29 +52,29 @@
     }
     .fx-input:focus {
       outline: none;
-      border-color: #00d4aa;
+      border-color: #7c3aed;
       box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.10);
     }
-    .fx-input::placeholder { color: #3a4255; }
+    .fx-input::placeholder { color: #3a3b6a; }
     .fx-input::-webkit-outer-spin-button,
     .fx-input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
-    select.fx-input option { background: #0e1117; color: #e2e8f0; }
-    select.fx-input optgroup { color: #00d4aa; font-size: 11px; }
+    select.fx-input option { background: #12132a; color: #e8e9f8; }
+    select.fx-input optgroup { color: #7c3aed; font-size: 11px; }
 
-    .fx-input.sl-field:focus  { border-color: #ff4560; box-shadow: 0 0 0 2px rgba(255,69,96,0.10); }
-    .fx-input.tp-field:focus  { border-color: #00c97a; box-shadow: 0 0 0 2px rgba(0,201,122,0.10); }
+    .fx-input.sl-field:focus  { border-color: #f43f5e; box-shadow: 0 0 0 2px rgba(255,69,96,0.10); }
+    .fx-input.tp-field:focus  { border-color: #00d68f; box-shadow: 0 0 0 2px rgba(0,201,122,0.10); }
     .fx-input.sl-field.has-val { border-color: rgba(255,69,96,0.45); }
     .fx-input.tp-field.has-val { border-color: rgba(0,201,122,0.45); }
 
     /* ── Section / card chrome ── */
     .fx-card {
-      background: #0e1117;
-      border: 1px solid #1e2535;
+      background: #12132a;
+      border: 1px solid #1e2040;
       border-radius: 8px;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .fx-card:hover { border-color: #252d3f; }
+    .fx-card:hover { border-color: #272860; }
 
     /* ── Micro label ── */
     .fx-lbl {
@@ -83,11 +83,11 @@
       font-weight: 600;
       letter-spacing: 0.07em;
       text-transform: uppercase;
-      color: #7a8499;
+      color: #8590b8;
       margin-bottom: 6px;
     }
-    .fx-lbl.bear { color: #ff4560; }
-    .fx-lbl.bull { color: #00c97a; }
+    .fx-lbl.bear { color: #f43f5e; }
+    .fx-lbl.bull { color: #00d68f; }
 
     /* ── Output stat cells ── */
     .stat-val {
@@ -95,26 +95,26 @@
       font-weight: 700;
       font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
       line-height: 1.1;
-      color: #e2e8f0;
+      color: #e8e9f8;
     }
-    .stat-val.sl  { color: #ff4560; }
-    .stat-val.tp  { color: #00c97a; }
-    .stat-val.rr  { color: #00d4aa; font-size: 16px; }
-    .stat-val.dim { color: #7a8499; }
+    .stat-val.sl  { color: #f43f5e; }
+    .stat-val.tp  { color: #00d68f; }
+    .stat-val.rr  { color: #7c3aed; font-size: 16px; }
+    .stat-val.dim { color: #8590b8; }
 
     /* ── Big lot size ── */
     .lot-big {
       font-size: 32px;
       font-weight: 800;
       font-family: 'JetBrains Mono', 'Fira Code', monospace;
-      color: #00d4aa;
+      color: #7c3aed;
       line-height: 1;
       letter-spacing: -0.02em;
     }
     @keyframes lot-pulse {
-      0%   { color: #00d4aa; }
+      0%   { color: #7c3aed; }
       40%  { color: #00ffcc; text-shadow: 0 0 8px rgba(0,255,200,0.5); }
-      100% { color: #00d4aa; text-shadow: none; }
+      100% { color: #7c3aed; text-shadow: none; }
     }
     .lot-flash { animation: lot-pulse 0.35s ease; }
 
@@ -130,9 +130,9 @@
       border: 1px solid transparent;
       transition: all 0.12s;
     }
-    .dir-long  { background: rgba(0,201,122,0.12); border-color: #00c97a; color: #00c97a; }
-    .dir-short { background: rgba(255,69,96,0.12);  border-color: #ff4560; color: #ff4560; }
-    .dir-none  { background: #121620; border-color: #1e2535; color: #4a5368; }
+    .dir-long  { background: rgba(0,201,122,0.12); border-color: #00d68f; color: #00d68f; }
+    .dir-short { background: rgba(255,69,96,0.12);  border-color: #f43f5e; color: #f43f5e; }
+    .dir-none  { background: #0f1024; border-color: #1e2040; color: #4a4f7a; }
 
     /* ── Warning badge ── */
     .warn-badge {
@@ -149,7 +149,7 @@
     .remove-btn {
       background: none;
       border: none;
-      color: #3a4255;
+      color: #3a3b6a;
       cursor: pointer;
       font-size: 15px;
       line-height: 1;
@@ -157,15 +157,15 @@
       border-radius: 3px;
       transition: color 0.12s, background 0.12s;
     }
-    .remove-btn:hover { color: #ff4560; background: rgba(255,69,96,0.10); }
+    .remove-btn:hover { color: #f43f5e; background: rgba(255,69,96,0.10); }
 
     /* ── Add button ── */
     .add-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: #00d4aa;
-      color: #090b0f;
+      background: #7c3aed;
+      color: #0b0c1e;
       border: none;
       border-radius: 5px;
       padding: 7px 16px;
@@ -175,22 +175,22 @@
       transition: background 0.14s, transform 0.1s;
       letter-spacing: 0.02em;
     }
-    .add-btn:hover  { background: #00bb99; }
+    .add-btn:hover  { background: #5b21b6; }
     .add-btn:active { transform: scale(0.97); }
 
     /* ── Divider ── */
-    .fx-divider { border: none; border-top: 1px solid #1e2535; }
+    .fx-divider { border: none; border-top: 1px solid #1e2040; }
 
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: #090b0f; }
-    ::-webkit-scrollbar-thumb { background: #1e2535; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #252d3f; }
+    ::-webkit-scrollbar-track { background: #0b0c1e; }
+    ::-webkit-scrollbar-thumb { background: #1e2040; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #272860; }
 
     /* ── Pill tab ── */
     .pip-note {
       font-size: 10px;
-      color: #3a4255;
+      color: #3a3b6a;
       font-style: italic;
       transition: color 0.2s;
     }
@@ -203,7 +203,7 @@
     }
 
     /* ── Summary stat ── */
-    .sum-stat { border-right: 1px solid #1e2535; padding: 0 20px; }
+    .sum-stat { border-right: 1px solid #1e2040; padding: 0 20px; }
     .sum-stat:first-child { padding-left: 0; }
     .sum-stat:last-child  { border-right: none; }
   </style>
@@ -212,43 +212,43 @@
 <body>
 
 <!-- ═══════════════════  TOP BAR  ════════════════════════════════════════════ -->
-<header style="background:#0e1117; border-bottom:1px solid #1e2535; height:52px;
+<header style="background:#12132a; border-bottom:1px solid #1e2040; height:52px;
                display:flex; align-items:center; padding:0 20px; gap:14px;
                position:sticky; top:0; z-index:50;">
 
   <!-- Brand -->
   <div style="display:flex; align-items:center; gap:9px; flex-shrink:0;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <polyline points="2,18 8,10 13,14 22,4" stroke="#00d4aa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-      <polyline points="16,4 22,4 22,10"       stroke="#00d4aa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="2,18 8,10 13,14 22,4" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="16,4 22,4 22,10"       stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
     <span style="font-weight:700; font-size:14px; white-space:nowrap;">
-      KofiFX <span style="color:#00d4aa;">Terminal</span>
+      KofiFX <span style="color:#7c3aed;">Terminal</span>
     </span>
-    <span style="color:#252d3f; margin:0 2px;">│</span>
-    <span style="color:#7a8499; font-size:12px; white-space:nowrap;">Position Sizing Dashboard</span>
+    <span style="color:#272860; margin:0 2px;">│</span>
+    <span style="color:#8590b8; font-size:12px; white-space:nowrap;">Position Sizing Dashboard</span>
   </div>
 
   <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
     <!-- Market clock placeholder -->
-    <span id="topClock" style="font-family:monospace; font-size:12px; color:#4a5368;"></span>
+    <span id="topClock" style="font-family:monospace; font-size:12px; color:#4a4f7a;"></span>
     <!-- Back link -->
     <a href="/macro"
-       style="color:#7a8499; font-size:11px; font-weight:600; text-decoration:none;
+       style="color:#8590b8; font-size:11px; font-weight:600; text-decoration:none;
               display:flex; align-items:center; gap:5px; padding:5px 12px;
-              border-radius:4px; border:1px solid #1e2535; letter-spacing:0.03em;
+              border-radius:4px; border:1px solid #1e2040; letter-spacing:0.03em;
               transition:all 0.14s; margin-right:6px;"
-       onmouseover="this.style.borderColor='#00d4aa';this.style.color='#00d4aa'"
-       onmouseout="this.style.borderColor='#1e2535';this.style.color='#7a8499'">
+       onmouseover="this.style.borderColor='#7c3aed';this.style.color='#7c3aed'"
+       onmouseout="this.style.borderColor='#1e2040';this.style.color='#8590b8'">
       Macro
     </a>
     <a href="/" id="backLink"
-       style="color:#7a8499; font-size:11px; font-weight:600; text-decoration:none;
+       style="color:#8590b8; font-size:11px; font-weight:600; text-decoration:none;
               display:flex; align-items:center; gap:5px; padding:5px 12px;
-              border-radius:4px; border:1px solid #1e2535; letter-spacing:0.03em;
+              border-radius:4px; border:1px solid #1e2040; letter-spacing:0.03em;
               transition:all 0.14s;"
-       onmouseover="this.style.borderColor='#00d4aa';this.style.color='#00d4aa'"
-       onmouseout="this.style.borderColor='#1e2535';this.style.color='#7a8499'">
+       onmouseover="this.style.borderColor='#7c3aed';this.style.color='#7c3aed'"
+       onmouseout="this.style.borderColor='#1e2040';this.style.color='#8590b8'">
       ← Charts
     </a>
   </div>
@@ -261,7 +261,7 @@
   <section class="fx-card" style="padding:20px 22px; margin-bottom:22px;">
 
     <div style="font-size:10px; font-weight:700; letter-spacing:0.10em;
-                text-transform:uppercase; color:#7a8499; margin-bottom:18px;">
+                text-transform:uppercase; color:#8590b8; margin-bottom:18px;">
       Account Settings
     </div>
 
@@ -272,7 +272,7 @@
         <label class="fx-lbl" for="gBalance">Account Balance</label>
         <div style="position:relative;">
           <span style="position:absolute; left:9px; top:50%; transform:translateY(-50%);
-                       color:#7a8499; pointer-events:none;">$</span>
+                       color:#8590b8; pointer-events:none;">$</span>
           <input id="gBalance" type="number" class="fx-input" value="10000"
                  min="100" step="500" style="padding-left:20px;" oninput="recalcAll()"/>
         </div>
@@ -285,7 +285,7 @@
           <input id="gRisk" type="number" class="fx-input" value="2"
                  min="0.1" max="20" step="0.1" style="padding-right:22px;" oninput="recalcAll()"/>
           <span style="position:absolute; right:9px; top:50%; transform:translateY(-50%);
-                       color:#7a8499; pointer-events:none;">%</span>
+                       color:#8590b8; pointer-events:none;">%</span>
         </div>
       </div>
 
@@ -297,17 +297,17 @@
       </div>
 
       <!-- Cash at Risk card -->
-      <div style="background:#121620; border:1px solid #252d3f; border-radius:6px;
+      <div style="background:#0f1024; border:1px solid #272860; border-radius:6px;
                   padding:12px 15px; min-width:0;">
         <div style="font-size:10px; font-weight:600; letter-spacing:0.06em;
-                    text-transform:uppercase; color:#7a8499; margin-bottom:5px;">
+                    text-transform:uppercase; color:#8590b8; margin-bottom:5px;">
           Cash at Risk
         </div>
         <div id="gCashRisk"
              style="font-size:26px; font-weight:800; font-family:monospace;
-                    color:#ff4560; line-height:1;">$200.00</div>
+                    color:#f43f5e; line-height:1;">$200.00</div>
         <div id="gRiskNote"
-             style="font-size:10px; color:#4a5368; margin-top:4px;">2.00% of $10,000</div>
+             style="font-size:10px; color:#4a4f7a; margin-top:4px;">2.00% of $10,000</div>
       </div>
 
     </div>
@@ -319,7 +319,7 @@
     <div>
       <span style="font-size:13px; font-weight:600;">Active Setups</span>
       <span id="setupCounter"
-            style="margin-left:8px; font-size:11px; color:#7a8499; font-family:monospace;"></span>
+            style="margin-left:8px; font-size:11px; color:#8590b8; font-family:monospace;"></span>
     </div>
     <button class="add-btn" onclick="addSetup()">
       <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
@@ -338,7 +338,7 @@
 
   <!-- ── EMPTY STATE ────────────────────────────────────────────────────────── -->
   <div id="emptyState"
-       style="display:none; text-align:center; padding:60px 20px; color:#3a4255;">
+       style="display:none; text-align:center; padding:60px 20px; color:#3a3b6a;">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
          style="margin:0 auto 16px; display:block; opacity:0.3;">
       <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/>
@@ -346,15 +346,15 @@
       <line x1="8"  y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     </svg>
     <p style="font-size:14px; margin-bottom:8px;">No setups yet</p>
-    <p style="font-size:12px;">Click <strong style="color:#00d4aa;">Add Setup</strong> to start calculating</p>
+    <p style="font-size:12px;">Click <strong style="color:#7c3aed;">Add Setup</strong> to start calculating</p>
   </div>
 
   <!-- ── PORTFOLIO SUMMARY ─────────────────────────────────────────────────── -->
   <section id="summarySection"
            style="display:none; margin-top:22px;"
            class="fx-card">
-    <div style="padding:16px 22px; border-bottom:1px solid #1e2535; font-size:10px;
-                font-weight:700; letter-spacing:0.10em; text-transform:uppercase; color:#7a8499;">
+    <div style="padding:16px 22px; border-bottom:1px solid #1e2040; font-size:10px;
+                font-weight:700; letter-spacing:0.10em; text-transform:uppercase; color:#8590b8;">
       Portfolio Summary
     </div>
     <div style="padding:16px 22px; display:flex; flex-wrap:wrap; gap:0;">
@@ -365,12 +365,12 @@
       <div class="sum-stat">
         <div class="fx-lbl">Total Lot Size</div>
         <div class="stat-val" id="sumLots"
-             style="font-size:24px; color:#00d4aa;">0.00</div>
+             style="font-size:24px; color:#7c3aed;">0.00</div>
       </div>
       <div class="sum-stat">
         <div class="fx-lbl">Total Cash Risk</div>
         <div class="stat-val" id="sumRisk"
-             style="font-size:24px; color:#ff4560;">$0.00</div>
+             style="font-size:24px; color:#f43f5e;">$0.00</div>
       </div>
       <div class="sum-stat">
         <div class="fx-lbl">% of Account</div>
@@ -559,10 +559,10 @@ function applyOutputs(card, d) {
 
   if (d.rr !== null) {
     rrEl.textContent = `1 : ${d.rr.toFixed(2)}`;
-    rrEl.style.color = d.rr >= 2 ? '#00c97a' : d.rr >= 1 ? '#00d4aa' : '#ff4560';
+    rrEl.style.color = d.rr >= 2 ? '#00d68f' : d.rr >= 1 ? '#7c3aed' : '#f43f5e';
   } else {
     rrEl.textContent = '—';
-    rrEl.style.color = '#7a8499';
+    rrEl.style.color = '#8590b8';
   }
 
   if (d.lotSize !== null && d.lotSize > 0 && isFinite(d.lotSize)) {
@@ -630,13 +630,13 @@ function recalcAll() {
     const lvlEl = document.getElementById('sumLevel');
     if (pct > 10) {
       lvlEl.textContent = 'High Risk';
-      lvlEl.style.color = '#ff4560';
+      lvlEl.style.color = '#f43f5e';
     } else if (pct > 5) {
       lvlEl.textContent = 'Moderate';
       lvlEl.style.color = '#ffa500';
     } else {
       lvlEl.textContent = 'Controlled';
-      lvlEl.style.color = '#00c97a';
+      lvlEl.style.color = '#00d68f';
     }
   } else {
     sumSec.style.display = 'none';
@@ -664,7 +664,7 @@ function addSetup(defaultPair) {
   card.innerHTML = `
     <!-- ── Card header ── -->
     <div style="padding:12px 15px; display:flex; align-items:center; gap:10px;
-                border-bottom:1px solid #1e2535; flex-wrap:wrap; gap:8px;">
+                border-bottom:1px solid #1e2040; flex-wrap:wrap; gap:8px;">
 
       <select class="fx-input c-pair"
               style="width:120px; flex-shrink:0; font-weight:600;"
@@ -683,7 +683,7 @@ function addSetup(defaultPair) {
     </div>
 
     <!-- ── Price inputs ── -->
-    <div style="padding:15px; border-bottom:1px solid #1e2535;">
+    <div style="padding:15px; border-bottom:1px solid #1e2040;">
       <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
 
         <div>
@@ -714,24 +714,24 @@ function addSetup(defaultPair) {
       <!-- Four stat chips -->
       <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px;">
 
-        <div style="background:#121620; border:1px solid #1e2535; border-radius:5px; padding:10px 12px;">
+        <div style="background:#0f1024; border:1px solid #1e2040; border-radius:5px; padding:10px 12px;">
           <div class="fx-lbl">SL Pips</div>
           <div class="stat-val sl o-sl">—</div>
         </div>
 
-        <div style="background:#121620; border:1px solid #1e2535; border-radius:5px; padding:10px 12px;">
+        <div style="background:#0f1024; border:1px solid #1e2040; border-radius:5px; padding:10px 12px;">
           <div class="fx-lbl">TP Pips</div>
           <div class="stat-val tp o-tp">—</div>
         </div>
 
-        <div style="background:#121620; border:1px solid #1e2535; border-radius:5px; padding:10px 12px;">
+        <div style="background:#0f1024; border:1px solid #1e2040; border-radius:5px; padding:10px 12px;">
           <div class="fx-lbl">Risk : Reward</div>
           <div class="stat-val rr o-rr" style="font-size:15px;">—</div>
         </div>
 
-        <div style="background:#121620; border:1px solid #1e2535; border-radius:5px; padding:10px 12px;">
+        <div style="background:#0f1024; border:1px solid #1e2040; border-radius:5px; padding:10px 12px;">
           <div class="fx-lbl">Cash Risk</div>
-          <div class="stat-val" style="color:#ff4560; font-size:16px;">
+          <div class="stat-val" style="color:#f43f5e; font-size:16px;">
             <span class="c-cash-risk">$${g.cashRisk.toFixed(2)}</span>
           </div>
         </div>
@@ -739,15 +739,15 @@ function addSetup(defaultPair) {
       </div>
 
       <!-- Lot size hero row -->
-      <div style="background:#0a1a15; border:1px solid #00d4aa28; border-radius:6px;
+      <div style="background:#0a1a15; border:1px solid #7c3aed28; border-radius:6px;
                   padding:14px 18px; display:flex; align-items:center;
                   justify-content:space-between; gap:12px;">
         <div>
           <div style="font-size:11px; font-weight:700; letter-spacing:0.08em;
-                      text-transform:uppercase; color:#00d4aa; margin-bottom:3px;">
+                      text-transform:uppercase; color:#7c3aed; margin-bottom:3px;">
             Recommended Lot Size
           </div>
-          <div style="font-size:10px; color:#3a4255;">
+          <div style="font-size:10px; color:#3a3b6a;">
             Standard lot = 100,000 units &nbsp;·&nbsp;
             Mini = 0.10 &nbsp;·&nbsp; Micro = 0.01
           </div>
