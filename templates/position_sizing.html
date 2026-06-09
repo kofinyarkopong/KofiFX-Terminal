@@ -206,6 +206,78 @@
     .sum-stat { border-right: 1px solid #1e2040; padding: 0 20px; }
     .sum-stat:first-child { padding-left: 0; }
     .sum-stat:last-child  { border-right: none; }
+
+    /* ── Input mode toggle (Price / Pips) ── */
+    .input-mode-toggle {
+      display: inline-flex;
+      background: #0b0c1e;
+      border: 1px solid #1e2040;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: #4a4f7a;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: background .12s, color .12s;
+    }
+    .mode-btn:hover { color: #8590b8; }
+    .mode-btn.mode-active {
+      background: #7c3aed;
+      color: #fff;
+    }
+
+    /* ── Direction toggle (Long / Short) shown in pips mode ── */
+    .dir-toggle {
+      display: inline-flex;
+      background: #0b0c1e;
+      border: 1px solid #1e2040;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .dir-toggle.hidden { display: none; }
+    .dir-btn {
+      background: transparent;
+      border: none;
+      color: #4a4f7a;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: background .12s, color .12s;
+    }
+    .dir-btn.dir-active-long  { background: #00d68f22; color: #00d68f; }
+    .dir-btn.dir-active-short { background: #f43f5e22; color: #f43f5e; }
+
+    /* ── Live pips badge beneath SL/TP price inputs ── */
+    .pips-badge {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .03em;
+      margin-top: 4px;
+      min-height: 14px;
+      transition: opacity .15s;
+    }
+    .pips-badge.bear { color: #f43f5e; }
+    .pips-badge.bull { color: #00d68f; }
+
+    /* ── Derived price badge shown in pips mode ── */
+    .price-badge {
+      display: none;
+      font-size: 10px;
+      font-weight: 600;
+      margin-top: 4px;
+      min-height: 14px;
+      color: #7c3aed;
+    }
   </style>
 </head>
 
@@ -487,6 +559,85 @@ function pipConfig(pair, entryPrice, usdjpy) {
   };
 }
 
+// ── Price decimal places per pair ────────────────────────────────────────────
+function pairDecimals(pair) {
+  const p = pair.replace('/', '').toUpperCase();
+  if (p === 'XAUUSD' || p === 'XAGUSD') return 2;
+  if (p.includes('JPY'))                 return 3;
+  return 5;
+}
+
+// ── Input mode switching ──────────────────────────────────────────────────────
+function setInputMode(id, mode) {
+  const card = document.getElementById(`card-${id}`);
+  if (!card) return;
+  card.dataset.inputMode = mode;
+
+  // Button states
+  card.querySelectorAll('.mode-btn').forEach(btn =>
+    btn.classList.toggle('mode-active', btn.dataset.mode === mode));
+
+  const slLbl  = document.getElementById(`sl-lbl-${id}`);
+  const tpLbl  = document.getElementById(`tp-lbl-${id}`);
+  const slIn   = card.querySelector('.c-sl');
+  const tpIn   = card.querySelector('.c-tp');
+  const dirTog = document.getElementById(`dir-toggle-${id}`);
+  const hint   = document.getElementById(`mode-hint-${id}`);
+
+  if (mode === 'price') {
+    slLbl.textContent  = 'SL Price';
+    tpLbl.textContent  = 'TP Price';
+    slIn.placeholder   = 'e.g. 1.08200';
+    tpIn.placeholder   = 'e.g. 1.09100';
+    if (dirTog) dirTog.classList.add('hidden');
+    if (hint)   hint.textContent = 'Enter SL/TP as price levels — pips auto-calculated';
+    // Show pip badges, hide price badges
+    const sp = document.getElementById(`sl-pips-${id}`);
+    const tp_ = document.getElementById(`tp-pips-${id}`);
+    const spr = document.getElementById(`sl-price-${id}`);
+    const tpr = document.getElementById(`tp-price-${id}`);
+    if (sp)  { sp.style.display  = ''; sp.textContent  = ''; }
+    if (tp_) { tp_.style.display = ''; tp_.textContent = ''; }
+    if (spr) { spr.style.display = 'none'; spr.textContent = ''; }
+    if (tpr) { tpr.style.display = 'none'; tpr.textContent = ''; }
+  } else {
+    slLbl.textContent  = 'SL Pips';
+    tpLbl.textContent  = 'TP Pips';
+    slIn.placeholder   = 'e.g. 30';
+    tpIn.placeholder   = 'e.g. 60';
+    if (dirTog) dirTog.classList.remove('hidden');
+    if (hint)   hint.textContent = 'Enter distance in pips — SL/TP price auto-calculated';
+    // Default direction to LONG if none set
+    if (!card.dataset.direction) setCardDir(id, 'long');
+    const sp = document.getElementById(`sl-pips-${id}`);
+    const tp_ = document.getElementById(`tp-pips-${id}`);
+    const spr = document.getElementById(`sl-price-${id}`);
+    const tpr = document.getElementById(`tp-price-${id}`);
+    if (sp)  { sp.style.display  = 'none'; sp.textContent  = ''; }
+    if (tp_) { tp_.style.display = 'none'; tp_.textContent = ''; }
+    if (spr) { spr.style.display = 'block'; spr.textContent = ''; }
+    if (tpr) { tpr.style.display = 'block'; tpr.textContent = ''; }
+  }
+
+  // Clear SL/TP values when switching mode
+  slIn.value = '';
+  tpIn.value = '';
+  slIn.classList.remove('has-val');
+  tpIn.classList.remove('has-val');
+  calcSetup(id);
+}
+
+function setCardDir(id, dir) {
+  const card = document.getElementById(`card-${id}`);
+  if (!card) return;
+  card.dataset.direction = dir;
+  card.querySelectorAll('.dir-btn').forEach(btn => {
+    btn.classList.remove('dir-active-long', 'dir-active-short');
+    if (btn.dataset.dir === dir) btn.classList.add(`dir-active-${dir}`);
+  });
+  calcSetup(id);
+}
+
 // ── Core maths ───────────────────────────────────────────────────────────────
 function calcSetup(id) {
   const card = document.getElementById(`card-${id}`);
@@ -494,23 +645,83 @@ function calcSetup(id) {
 
   const g      = globals();
   const pair   = card.querySelector('.c-pair').value;
+  const mode   = card.dataset.inputMode || 'price';
+  const dir    = card.dataset.direction  || 'long';
   const entry  = parseFloat(card.querySelector('.c-entry').value);
-  const sl     = parseFloat(card.querySelector('.c-sl').value);
-  const tp     = parseFloat(card.querySelector('.c-tp').value);
+  const rawSL  = parseFloat(card.querySelector('.c-sl').value);
+  const rawTP  = parseFloat(card.querySelector('.c-tp').value);
 
   const hasEntry = isFinite(entry) && entry > 0;
-  const hasSL    = isFinite(sl)    && sl    > 0;
-  const hasTP    = isFinite(tp)    && tp    > 0;
 
   // Always sync cash risk label
   card.querySelector('.c-cash-risk').textContent = `$${g.cashRisk.toFixed(2)}`;
+
+  const { pipSize, pipValue, note } = pipConfig(pair, entry, g.usdjpy);
+  const dec = pairDecimals(pair);
+
+  // ── Resolve SL / TP prices based on mode ──
+  let sl, tp;
+
+  if (mode === 'pips') {
+    // In pips mode: raw values are pip distances, convert to price
+    const slPipsEntered = isFinite(rawSL) && rawSL > 0 ? rawSL : null;
+    const tpPipsEntered = isFinite(rawTP) && rawTP > 0 ? rawTP : null;
+
+    if (hasEntry && slPipsEntered !== null) {
+      const offset = slPipsEntered * pipSize;
+      sl = dir === 'long' ? entry - offset : entry + offset;
+      // Show derived SL price
+      const badge = document.getElementById(`sl-price-${id}`);
+      if (badge) badge.textContent = `= ${sl.toFixed(dec)}`;
+    }
+    if (hasEntry && tpPipsEntered !== null) {
+      const offset = tpPipsEntered * pipSize;
+      tp = dir === 'long' ? entry + offset : entry - offset;
+      const badge = document.getElementById(`tp-price-${id}`);
+      if (badge) badge.textContent = `= ${tp.toFixed(dec)}`;
+    }
+    // Clear badges when empty
+    if (!hasEntry || slPipsEntered === null) {
+      const b = document.getElementById(`sl-price-${id}`);
+      if (b) b.textContent = '';
+    }
+    if (!hasEntry || tpPipsEntered === null) {
+      const b = document.getElementById(`tp-price-${id}`);
+      if (b) b.textContent = '';
+    }
+  } else {
+    // Price mode: raw values are prices already
+    sl = isFinite(rawSL) && rawSL > 0 ? rawSL : NaN;
+    tp = isFinite(rawTP) && rawTP > 0 ? rawTP : NaN;
+
+    // Update live pip badges
+    const slBadge = document.getElementById(`sl-pips-${id}`);
+    const tpBadge = document.getElementById(`tp-pips-${id}`);
+    if (slBadge) {
+      if (hasEntry && isFinite(sl) && sl > 0) {
+        const p = Math.abs(entry - sl) / pipSize;
+        slBadge.textContent = `≈ ${p.toFixed(1)} pips`;
+      } else {
+        slBadge.textContent = '';
+      }
+    }
+    if (tpBadge) {
+      if (hasEntry && isFinite(tp) && tp > 0) {
+        const p = Math.abs(tp - entry) / pipSize;
+        tpBadge.textContent = `≈ ${p.toFixed(1)} pips`;
+      } else {
+        tpBadge.textContent = '';
+      }
+    }
+  }
+
+  const hasSL = isFinite(sl) && sl > 0;
+  const hasTP = isFinite(tp) && tp > 0;
 
   if (!hasEntry || !hasSL) {
     applyOutputs(card, null);
     return null;
   }
-
-  const { pipSize, pipValue, note } = pipConfig(pair, entry, g.usdjpy);
 
   const slPips  = Math.abs(entry - sl) / pipSize;
   const tpPips  = hasTP ? Math.abs(tp - entry) / pipSize : null;
@@ -519,8 +730,10 @@ function calcSetup(id) {
                     ? g.cashRisk / (slPips * pipValue)
                     : null;
 
-  // Infer direction
-  const direction = sl < entry ? 'LONG' : sl > entry ? 'SHORT' : null;
+  // Infer direction (price mode: from prices; pips mode: from toggle)
+  const direction = mode === 'pips'
+    ? dir.toUpperCase()
+    : (sl < entry ? 'LONG' : sl > entry ? 'SHORT' : null);
 
   // TP validity warning
   let warn = null;
@@ -684,6 +897,23 @@ function addSetup(defaultPair) {
 
     <!-- ── Price inputs ── -->
     <div style="padding:15px; border-bottom:1px solid #1e2040;">
+
+      <!-- Mode + direction bar -->
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <span style="font-size:10px; color:#4a4f7a; text-transform:uppercase; letter-spacing:.06em;">Input Mode</span>
+        <div class="input-mode-toggle">
+          <button class="mode-btn mode-active" data-mode="price" onclick="setInputMode(${id},'price')">Price</button>
+          <button class="mode-btn" data-mode="pips" onclick="setInputMode(${id},'pips')">Pips</button>
+        </div>
+        <div class="dir-toggle hidden" id="dir-toggle-${id}">
+          <button class="dir-btn" data-dir="long" onclick="setCardDir(${id},'long')">Long ↑</button>
+          <button class="dir-btn" data-dir="short" onclick="setCardDir(${id},'short')">Short ↓</button>
+        </div>
+        <span style="font-size:10px; color:#3a3b6a; font-style:italic;" id="mode-hint-${id}">
+          Enter SL/TP as price levels — pips auto-calculated
+        </span>
+      </div>
+
       <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
 
         <div>
@@ -693,17 +923,22 @@ function addSetup(defaultPair) {
         </div>
 
         <div>
-          <label class="fx-lbl bear" for="sl-${id}">Stop Loss ↓</label>
+          <label class="fx-lbl bear" for="sl-${id}" id="sl-lbl-${id}">SL Price</label>
           <input id="sl-${id}" type="number" class="fx-input c-sl sl-field"
                  placeholder="e.g. 1.08200" step="any"
                  oninput="this.classList.toggle('has-val',!!this.value); calcSetup(${id})"/>
+          <!-- Live pip count (price mode) / derived price (pips mode) -->
+          <div class="pips-badge bear" id="sl-pips-${id}"></div>
+          <div class="price-badge" id="sl-price-${id}"></div>
         </div>
 
         <div>
-          <label class="fx-lbl bull" for="tp-${id}">Take Profit ↑</label>
+          <label class="fx-lbl bull" for="tp-${id}" id="tp-lbl-${id}">TP Price</label>
           <input id="tp-${id}" type="number" class="fx-input c-tp tp-field"
                  placeholder="e.g. 1.09100" step="any"
                  oninput="this.classList.toggle('has-val',!!this.value); calcSetup(${id})"/>
+          <div class="pips-badge bull" id="tp-pips-${id}"></div>
+          <div class="price-badge" id="tp-price-${id}"></div>
         </div>
       </div>
     </div>

@@ -289,7 +289,11 @@ def _oanda_headers() -> dict:
 
 
 def _get_ohlcv_oanda(symbol: str, timeframe: str, limit: int) -> list[dict]:
-    """Fetch historical candles from OANDA v20 instruments endpoint."""
+    """Fetch historical candles from OANDA v20 instruments endpoint.
+
+    Uses bid-price candles (price='B') to match TradingView's OANDA feed,
+    which also plots bid prices by default for forex instruments.
+    """
     instrument   = OANDA_INSTRUMENT_MAP[symbol.upper()]
     granularity  = OANDA_GRANULARITY.get(timeframe, 'H1')
     # OANDA caps count at 5000 per request; we cap at 500 for speed
@@ -298,7 +302,7 @@ def _get_ohlcv_oanda(symbol: str, timeframe: str, limit: int) -> list[dict]:
     params = {
         'granularity': granularity,
         'count':       count,
-        'price':       'M',   # mid-point candles (bid/ask midpoint)
+        'price':       'B',   # bid candles — matches TradingView OANDA default
     }
     try:
         resp = requests.get(url, headers=_oanda_headers(), params=params, timeout=10)
@@ -308,8 +312,8 @@ def _get_ohlcv_oanda(symbol: str, timeframe: str, limit: int) -> list[dict]:
         for c in raw.get('candles', []):
             if not c.get('complete', True):
                 continue   # skip incomplete (live) candle
-            mid  = c.get('mid', {})
-            o, h, l, cl = (float(mid.get(k, 0)) for k in ('o', 'h', 'l', 'c'))
+            bid  = c.get('bid', {})
+            o, h, l, cl = (float(bid.get(k, 0)) for k in ('o', 'h', 'l', 'c'))
             if o == 0 or cl == 0:
                 continue
             # OANDA returns RFC3339/Unix string depending on Accept-Datetime-Format
@@ -335,51 +339,53 @@ def _get_ohlcv_oanda(symbol: str, timeframe: str, limit: int) -> list[dict]:
 
 
 def _get_price_oanda(symbol: str) -> dict:
-    """Return the most current mid price from OANDA.
+    """Return the most current bid price from OANDA.
+
+    Uses bid candles to match TradingView's OANDA feed (bid by default).
 
     Strategy:
-      1. Fetch the last 2 S5 (5-second) candles — gives near-live price.
-      2. If S5 is empty (outside market hours), fall back to M1 then H1.
-      3. Use today's first H1 candle open as the 'previous close' for
-         daily change so the change % feels meaningful.
+      1. Fetch the last 3 S5 (5-second) candles — gives near-live price.
+      2. If S5 is empty (outside market hours), fall back to M1 then M5.
+      3. Use yesterday's completed D candle close as the 'previous close'
+         for daily change so the change % feels meaningful.
     """
     instrument = OANDA_INSTRUMENT_MAP[symbol.upper()]
     url        = f'{OANDA_BASE_URL}/instruments/{instrument}/candles'
     decimals   = _decimal_places(symbol)
 
     def _fetch(gran: str, count: int):
-        params = {'granularity': gran, 'count': count, 'price': 'M'}
+        params = {'granularity': gran, 'count': count, 'price': 'B'}
         r = requests.get(url, headers=_oanda_headers(), params=params, timeout=8)
         r.raise_for_status()
         return r.json().get('candles', [])
 
     try:
-        # --- Live price: use the most recent completed 5-second candle ---
+        # --- Live price: most recent bid close (S5 → M1 → M5 fallback) ---
         price = 0.0
         for gran in ('S5', 'M1', 'M5'):
             candles = _fetch(gran, 3)
             completed = [c for c in candles if c.get('complete', True)]
-            # Also accept the current (incomplete) candle for a tighter quote
+            # Accept incomplete candle too — gives the tightest real-time quote
             all_c = completed or candles
             if all_c:
-                price = float(all_c[-1]['mid']['c'])
+                price = float(all_c[-1]['bid']['c'])
                 break
 
         if not price:
             return {'symbol': symbol, 'price': 0, 'change': 0,
                     'change_pct': 0, 'direction': 'flat'}
 
-        # --- Daily change: compare against today's session open (H1 D candle) ---
+        # --- Daily change: yesterday's completed D close as reference ---
         try:
             day_candles = _fetch('D', 2)
             completed_day = [c for c in day_candles if c.get('complete', True)]
             if completed_day:
-                prev_close = float(completed_day[-1]['mid']['c'])
+                prev_close = float(completed_day[-1]['bid']['c'])
             else:
-                # Use H1 open as reference
+                # Use H1 open as reference when session is brand new
                 h1 = _fetch('H1', 2)
                 h1c = [c for c in h1 if c.get('complete', True)]
-                prev_close = float(h1c[-1]['mid']['o']) if h1c else price
+                prev_close = float(h1c[-1]['bid']['o']) if h1c else price
         except Exception:
             prev_close = price
 
