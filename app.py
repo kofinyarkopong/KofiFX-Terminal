@@ -126,6 +126,76 @@ def macro_dashboard():
     return render_template("macro_dashboard.html")
 
 
+@app.route("/journal")
+def journal():
+    """Trading Journal — TradeZella-style performance tracker."""
+    return render_template("journal.html")
+
+
+@app.route("/api/broker/history")
+def broker_history():
+    """Pull closed deals from Exness MT4/MT5 via MetaAPI.
+    Query params:
+      token     — override MetaAPI token (optional, falls back to .env)
+      accountId — override account ID   (optional, falls back to .env)
+      days      — how many days of history to fetch (default 30)
+    Returns a JSON array of normalised deal objects.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    token   = (request.args.get("token", "") or METAAPI_TOKEN).strip()
+    acct_id = (request.args.get("accountId", "") or METAAPI_ACCOUNT_ID).strip()
+    days    = int(request.args.get("days", 30))
+
+    if not token or not acct_id:
+        return jsonify({"error": "MetaAPI token or account ID not configured."}), 400
+
+    end_time   = datetime.now(timezone.utc)
+    start_time = end_time - timedelta(days=days)
+
+    METAAPI_BASE = "https://mt-client-api-v1.agiliumtrade.ai"
+    url = (
+        f"{METAAPI_BASE}/users/current/accounts/{acct_id}"
+        f"/history-deals/time"
+        f"/{start_time.isoformat()}/{end_time.isoformat()}"
+    )
+    headers = {
+        "auth-token": token,
+        "Content-Type": "application/json",
+    }
+    try:
+        resp = requests.get(url, headers=headers, timeout=15)
+        resp.raise_for_status()
+        deals = resp.json()
+        # Normalise: keep only closed trade deals (type BUY/SELL, entry OUT)
+        out = []
+        for d in deals:
+            entry_type = (d.get("entryType") or "").upper()
+            deal_type  = (d.get("type") or "").upper()
+            # Skip balance/credit operations
+            if deal_type not in ("DEAL_TYPE_BUY", "DEAL_TYPE_SELL"):
+                continue
+            out.append({
+                "id":          d.get("id") or d.get("_id", ""),
+                "ticket":      d.get("id") or d.get("_id", ""),
+                "symbol":      d.get("symbol", ""),
+                "type":        deal_type,
+                "volume":      d.get("volume", 0),
+                "openPrice":   d.get("openPrice") or d.get("price", 0),
+                "closePrice":  d.get("closePrice") or d.get("price", 0),
+                "profit":      d.get("profit", 0),
+                "commission":  d.get("commission", 0),
+                "swap":        d.get("swap", 0),
+                "time":        d.get("time", ""),
+                "closeTime":   d.get("closeTime") or d.get("time", ""),
+            })
+        logger.info("MetaAPI history: %d deals returned for account %s", len(out), acct_id[:8])
+        return jsonify(out)
+    except Exception as exc:
+        logger.error("MetaAPI history error: %s", exc)
+        return jsonify({"error": str(exc)}), 502
+
+
 @app.route("/api/calendar")
 def api_calendar():
     """Proxy ForexFactory economic calendar JSON (avoids browser CORS).
