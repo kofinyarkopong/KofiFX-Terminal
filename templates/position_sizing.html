@@ -482,7 +482,23 @@ const PAIR_GROUPS = {
   'CAD / NZD Crosses': [
     'CAD/CHF','NZD/CAD','NZD/CHF',
   ],
-  'Metals': ['XAU/USD'],
+  'Metals': [
+    'XAU/USD',
+    'XAG/USD',        // Silver
+  ],
+  'Indices': [
+    'US100',          // Nasdaq 100
+    'NAS100',         // Nasdaq 100 (alias)
+    'US30',           // Dow Jones 30
+    'SP500',          // S&P 500
+    'GER40',          // DAX
+  ],
+  'Crypto': [
+    'BTC/USDT',       // Bitcoin
+    'ETH/USDT',       // Ethereum
+    'BTC/USD',
+    'ETH/USD',
+  ],
 };
 
 const DEFAULT_PAIRS = [
@@ -523,6 +539,7 @@ function globals() {
 function pipConfig(pair, entryPrice, usdjpy) {
   const p = pair.replace('/', '').toUpperCase();
 
+  // ── Metals ──────────────────────────────────────────────────────────────
   if (p === 'XAUUSD') {
     return {
       pipSize:  0.10,
@@ -530,7 +547,62 @@ function pipConfig(pair, entryPrice, usdjpy) {
       note: 'Gold · pip = $0.10 · $1.00/pip per lot',
     };
   }
+  if (p === 'XAGUSD') {
+    return {
+      pipSize:  0.01,
+      pipValue: 0.50,
+      note: 'Silver · pip = $0.01 · $0.50/pip per lot (5,000 oz)',
+    };
+  }
 
+  // ── Indices ──────────────────────────────────────────────────────────────
+  // Standard CFD contract: 1 lot = 1 unit; 1 point move = $1
+  if (['US100','NAS100'].includes(p)) {
+    return {
+      pipSize:  0.25,          // NQ minimum tick = 0.25 points
+      pipValue: 0.25,
+      note: 'Nasdaq 100 · 1 pip = 0.25 pts · $0.25/pip (check broker contract)',
+    };
+  }
+  if (p === 'US30') {
+    return {
+      pipSize:  1,
+      pipValue: 1.00,
+      note: 'Dow Jones 30 · 1 pip = 1 pt · $1.00/pip (check broker contract)',
+    };
+  }
+  if (p === 'SP500') {
+    return {
+      pipSize:  0.25,
+      pipValue: 0.25,
+      note: 'S&P 500 · 1 pip = 0.25 pts · $0.25/pip (check broker contract)',
+    };
+  }
+  if (['GER40','UK100','JP225','HK50'].includes(p)) {
+    return {
+      pipSize:  1,
+      pipValue: 1.00,
+      note: `${p} · 1 pip = 1 pt · $1.00/pip (check broker contract)`,
+    };
+  }
+
+  // ── Crypto ──────────────────────────────────────────────────────────────
+  if (p === 'BTCUSD' || p === 'BTCUSDT') {
+    return {
+      pipSize:  1.00,          // $1 move per pip
+      pipValue: 1.00,
+      note: 'Bitcoin · pip = $1.00 price move · $1.00/pip per lot',
+    };
+  }
+  if (p === 'ETHUSD' || p === 'ETHUSDT') {
+    return {
+      pipSize:  0.10,          // $0.10 move per pip
+      pipValue: 0.10,
+      note: 'Ethereum · pip = $0.10 price move · $0.10/pip per lot',
+    };
+  }
+
+  // ── Forex ──────────────────────────────────────────────────────────────
   if (p.includes('JPY')) {
     const pv = (0.01 / usdjpy) * 100_000;
     return {
@@ -564,6 +636,9 @@ function pairDecimals(pair) {
   const p = pair.replace('/', '').toUpperCase();
   if (p === 'XAUUSD' || p === 'XAGUSD') return 2;
   if (p.includes('JPY'))                 return 3;
+  if (['US100','NAS100','US30','SP500','GER40'].includes(p)) return 2;
+  if (p === 'BTCUSD' || p === 'BTCUSDT') return 2;
+  if (p === 'ETHUSD' || p === 'ETHUSDT') return 2;
   return 5;
 }
 

@@ -144,32 +144,36 @@ SYMBOL_MAP: dict[str, str] = {
     "NZDCHF": "NZDCHF=X",
     "CHFJPY": "CHFJPY=X",
     # Indices
-    "DXY":   "DX-Y.NYB",
-    "US100": "NQ=F",
-    "SP500": "^GSPC",
-    "GER40": "^GDAXI",
-    "UK100": "^FTSE",
-    "JP225": "^N225",
-    "HK50":  "^HSI",
+    "DXY":    "DX-Y.NYB",
+    "US100":  "NQ=F",          # Nasdaq 100 futures
+    "NAS100": "NQ=F",          # Nasdaq 100 alias (same as US100)
+    "US30":   "^DJI",          # Dow Jones Industrial Average
+    "SP500":  "^GSPC",
+    "GER40":  "^GDAXI",
+    "UK100":  "^FTSE",
+    "JP225":  "^N225",
+    "HK50":   "^HSI",
     # Commodities / Metals
-    "XAUUSD": "GC=F",
-    "XAGUSD": "SI=F",
+    "XAUUSD": "GC=F",          # Gold
+    "XAGUSD": "SI=F",          # Silver
     "USOIL":  "CL=F",
     "UKOIL":  "BZ=F",
     # US Stocks (examples)
     "AAPL": "AAPL",
     "TSLA": "TSLA",
     "NVDA": "NVDA",
-    # Crypto via yfinance fallback (Hyperliquid WS preferred client-side)
-    "BTCUSD": "BTC-USD",
-    "ETHUSD": "ETH-USD",
-    "SOLUSD": "SOL-USD",
+    # Crypto — USDT and USD quoted (both map to yfinance USD price)
+    "BTCUSD":  "BTC-USD",
+    "BTCUSDT": "BTC-USD",      # Binance-style USDT notation
+    "ETHUSD":  "ETH-USD",
+    "ETHUSDT": "ETH-USD",      # Binance-style USDT notation
+    "SOLUSD":  "SOL-USD",
 }
 
 # Symbols categorised as crypto (routed to Hyperliquid WS on the front end)
 HYPERLIQUID_SYMBOLS: set[str] = {
     "BTC", "ETH", "SOL", "ARB", "AVAX", "DOGE", "MATIC", "OP",
-    "BTCUSD", "ETHUSD", "SOLUSD",
+    "BTCUSD", "BTCUSDT", "ETHUSD", "ETHUSDT", "SOLUSD",
 }
 
 # ---------------------------------------------------------------------------
@@ -486,10 +490,13 @@ def _decimal_places(symbol: str) -> int:
     sym = symbol.upper()
     if any(s in sym for s in ("JPY", "HUF", "KRW", "IDR", "VND")):
         return 3
-    if sym in ("DXY", "US100", "SP500", "GER40", "UK100", "JP225",
-               "HK50", "XAUUSD", "USOIL", "UKOIL"):
+    if sym in ("DXY", "US100", "NAS100", "US30", "SP500", "GER40",
+               "UK100", "JP225", "HK50", "XAUUSD", "XAGUSD",
+               "USOIL", "UKOIL"):
         return 2
-    if sym in ("BTCUSD", "ETHUSD"):
+    if sym in ("BTCUSD", "BTCUSDT"):
+        return 2   # BTC quoted to nearest cent
+    if sym in ("ETHUSD", "ETHUSDT"):
         return 2
     return 5
 

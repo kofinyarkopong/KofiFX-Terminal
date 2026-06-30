@@ -542,23 +542,40 @@
         <label class="panel-title block">Pair Focus</label>
         <select id="pair-focus-select" class="w-full" onchange="updatePairContext()">
           <option value="">— Select a pair —</option>
-          <option value="EURUSD">EURUSD</option>
-          <option value="GBPUSD">GBPUSD</option>
-          <option value="AUDUSD">AUDUSD</option>
-          <option value="NZDUSD">NZDUSD</option>
-          <option value="USDJPY">USDJPY</option>
-          <option value="USDCAD">USDCAD</option>
-          <option value="USDCHF">USDCHF</option>
-          <option value="GBPJPY">GBPJPY</option>
-          <option value="AUDJPY">AUDJPY</option>
-          <option value="CADJPY">CADJPY</option>
-          <option value="EURJPY">EURJPY</option>
-          <option value="NZDJPY">NZDJPY</option>
-          <option value="CADCHF">CADCHF</option>
-          <option value="AUDCHF">AUDCHF</option>
-          <option value="AUDNZD">AUDNZD</option>
-          <option value="GBPNZD">GBPNZD</option>
-          <option value="XAUUSD">XAUUSD</option>
+          <optgroup label="Majors">
+            <option value="EURUSD">EURUSD</option>
+            <option value="GBPUSD">GBPUSD</option>
+            <option value="AUDUSD">AUDUSD</option>
+            <option value="NZDUSD">NZDUSD</option>
+            <option value="USDJPY">USDJPY</option>
+            <option value="USDCAD">USDCAD</option>
+            <option value="USDCHF">USDCHF</option>
+          </optgroup>
+          <optgroup label="JPY Crosses">
+            <option value="GBPJPY">GBPJPY</option>
+            <option value="AUDJPY">AUDJPY</option>
+            <option value="CADJPY">CADJPY</option>
+            <option value="EURJPY">EURJPY</option>
+            <option value="NZDJPY">NZDJPY</option>
+          </optgroup>
+          <optgroup label="Crosses">
+            <option value="CADCHF">CADCHF</option>
+            <option value="AUDCHF">AUDCHF</option>
+            <option value="AUDNZD">AUDNZD</option>
+            <option value="GBPNZD">GBPNZD</option>
+          </optgroup>
+          <optgroup label="Metals">
+            <option value="XAUUSD">XAUUSD — Gold</option>
+            <option value="XAGUSD">XAGUSD — Silver</option>
+          </optgroup>
+          <optgroup label="Indices">
+            <option value="US100">US100 — Nasdaq 100</option>
+            <option value="US30">US30 — Dow Jones 30</option>
+          </optgroup>
+          <optgroup label="Crypto">
+            <option value="BTCUSDT">BTCUSDT — Bitcoin</option>
+            <option value="ETHUSDT">ETHUSDT — Ethereum</option>
+          </optgroup>
         </select>
 
         <!-- Pair context card — hidden until selection -->
@@ -1216,7 +1233,37 @@ const PAIR_CONTEXT = {
     session: 'All sessions — spikes on US data',
     bias: 'Bullish gold — real yields falling, central bank buying',
     risk: 'USD surge on hot CPI, risk-on rally reducing safe haven'
-  }
+  },
+  XAGUSD: {
+    cot: 'SILVER net long +42k · industrial demand + gold correlation',
+    session: 'NY primary — follows gold with amplified moves',
+    bias: 'Bullish silver while gold leads and industrial demand holds',
+    risk: 'Risk-off selloff, gold breakdown, strong USD'
+  },
+  US100: {
+    cot: 'NASDAQ positioning reflects AI/tech growth optimism',
+    session: 'NY — 09:30–16:00 ET peak liquidity',
+    bias: 'Bullish while rate-cut narrative and tech earnings support',
+    risk: 'Hot inflation re-pricing rates higher, earnings miss, Fed hawkish'
+  },
+  US30: {
+    cot: 'DJIA reflects broad blue-chip / value sentiment',
+    session: 'NY — 09:30–16:00 ET peak liquidity',
+    bias: 'Broadly constructive while US economy avoids hard landing',
+    risk: 'Recession signals, credit market stress, geopolitical escalation'
+  },
+  BTCUSDT: {
+    cot: 'BTC institutional flows growing via ETF vehicle demand',
+    session: '24/7 · highest volatility in US morning and Asia open',
+    bias: 'Macro risk-on asset — rallies with equities, leads in bull phases',
+    risk: 'Regulatory crackdown, broad risk-off, exchange liquidity events'
+  },
+  ETHUSDT: {
+    cot: 'ETH driven by DeFi activity and network upgrade catalysts',
+    session: '24/7 · follows BTC with higher beta',
+    bias: 'Bullish while BTC leads and on-chain activity expands',
+    risk: 'BTC breakdown, smart-contract exploit, competitor network growth'
+  },
 };
 
 // ----------------------------------------------------------------
@@ -1858,12 +1905,22 @@ renderCOT('cot-commodities', COT_COMMODITIES);
 
 // All symbols to scan
 const SCANNER_SYMBOLS = [
+  // Majors
   'EURUSD','GBPUSD','AUDUSD','NZDUSD','USDJPY','USDCAD','USDCHF',
+  // JPY crosses
   'EURJPY','GBPJPY','AUDJPY','CADJPY','CHFJPY','NZDJPY',
+  // EUR crosses
   'EURGBP','EURCAD','EURCHF','EURAUD','EURNZD',
+  // GBP crosses
   'GBPCAD','GBPCHF','GBPAUD','GBPNZD',
+  // AUD / CAD / NZD crosses
   'AUDCAD','AUDCHF','AUDNZD','CADCHF','NZDCAD','NZDCHF',
-  'XAUUSD'
+  // Metals
+  'XAUUSD','XAGUSD',
+  // Indices
+  'US100','US30',
+  // Crypto
+  'BTCUSDT','ETHUSDT',
 ];
 
 let scannerData = [];        // current price data array

@@ -59,6 +59,11 @@ _PRE_WARM: list[tuple[str, str]] = [
     ("EURCHF", "1h"), ("CADCHF", "1h"), ("GBPNZD", "1h"), ("AUDNZD",  "1h"),
     ("EURUSD", "4h"), ("GBPUSD", "4h"), ("XAUUSD", "4h"),
     ("EURUSD", "1d"), ("USDJPY", "4h"),
+    # New instruments
+    ("US30",    "1d"), ("US30",   "1h"),
+    ("XAGUSD",  "1d"), ("XAGUSD", "1h"),
+    ("BTCUSDT", "1d"), ("BTCUSDT","1h"),
+    ("ETHUSDT", "1d"), ("ETHUSDT","1h"),
 ]
 
 
