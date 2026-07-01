@@ -6,31 +6,31 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* ── Evedex-inspired dark navy / purple palette ── */
-  --bg-deep:        #0b0c1e;   /* page background — deep navy */
-  --bg-panel:       #12132a;   /* cards, panels */
-  --bg-toolbar:     #0f1024;   /* toolbars, top bar */
-  --bg-hover:       #1a1b35;   /* hover state */
-  --bg-selected:    #1e2040;   /* active / selected */
+  /* ── Institutional Blue — professional FX terminal palette ── */
+  --bg-deep:        #080c12;   /* page background — near black */
+  --bg-panel:       #0d1117;   /* cards, panels */
+  --bg-toolbar:     #0a0e16;   /* top bar, toolbars */
+  --bg-hover:       #111926;   /* hover state */
+  --bg-selected:    #152035;   /* active / selected */
 
-  --border:         #1e2040;
-  --border-light:   #272860;
+  --border:         #1c2840;
+  --border-light:   #243352;
 
-  --text-primary:   #e8e9f8;   /* near-white with slight purple tint */
-  --text-secondary: #8590b8;   /* muted purple-grey */
-  --text-muted:     #4a4f7a;   /* very muted */
+  --text-primary:   #d0dce8;   /* ice blue-white */
+  --text-secondary: #7a8fa6;   /* steel blue-grey */
+  --text-muted:     #3d5068;   /* very muted */
 
-  --accent:         #7c3aed;   /* Evedex purple — primary CTA */
-  --accent-dim:     #5b21b6;   /* darker purple */
+  --accent:         #1a73e8;   /* electric institutional blue */
+  --accent-dim:     #1557b0;   /* darker blue */
 
-  --up:             #00d68f;   /* Evedex bright green for positive / bull */
-  --down:           #f43f5e;   /* rose-red for negative / bear */
-  --flat:           #8590b8;
+  --up:             #26a69a;   /* TradingView teal-green */
+  --down:           #ef5350;   /* TradingView red */
+  --flat:           #7a8fa6;
 
-  --up-bg:          rgba(0,   214, 143, 0.12);
-  --down-bg:        rgba(244,  63,  94, 0.12);
-  --up-flash:       rgba(0,   214, 143, 0.30);
-  --down-flash:     rgba(244,  63,  94, 0.30);
+  --up-bg:          rgba(38,  166, 154, 0.12);
+  --down-bg:        rgba(239,  83,  80, 0.12);
+  --up-flash:       rgba(38,  166, 154, 0.30);
+  --down-flash:     rgba(239,  83,  80, 0.30);
 
   --top-bar-h:      52px;
   --toolbar-h:      38px;
@@ -129,7 +129,7 @@ html, body {
 .count-btn.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #000;
+  color: #fff;
 }
 
 /* Tools nav link */
@@ -156,7 +156,7 @@ html, body {
 .tools-link:hover {
   color: var(--accent);
   border-color: var(--accent-dim);
-  background: rgba(0, 212, 170, 0.07);
+  background: rgba(26, 115, 232, 0.08);
 }
 
 /* Status bar (right side) */
@@ -545,7 +545,7 @@ html, body {
   right: 8px;
   z-index: 20;
   width: 220px;
-  background:   #12132a;
+  background:   #0d1117;
   border: 1px solid #252d3f;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.55);
@@ -586,7 +586,7 @@ html, body {
   transition: border-color 0.12s, color 0.12s;
   text-align: left;
 }
-.csp-preset-btn:hover { border-color: #7c3aed; color: #e2e8f0; }
+.csp-preset-btn:hover { border-color: #1a73e8; color: #e2e8f0; }
 .csp-preset-btn span {
   display: inline-block;
   width: 12px;
@@ -620,7 +620,7 @@ html, body {
   cursor: pointer;
   padding: 0;
 }
-.csp-row input[type="color"]:focus { outline: none; border-color: #7c3aed; }
+.csp-row input[type="color"]:focus { outline: none; border-color: #1a73e8; }
 
 /* ── KNW Quick-toggle bar ──────────────────────────────────────────────────── */
 .knw-quickbar {

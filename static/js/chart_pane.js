@@ -166,10 +166,10 @@ class ChartPane {
   static STYLE_PRESETS = {
     'Evedex': {
       label: 'Evedex (Default)',
-      bg: '#0b0c1e', gridColor: '#141528', crossColor: '#3a3b6a',
-      labelBg: '#1a1b35', borderColor: '#1e2040', textColor: '#8590b8',
-      upColor: '#00d68f', downColor: '#f43f5e',
-      wickUpColor: '#00d68f', wickDownColor: '#f43f5e',
+      bg: '#080c12', gridColor: '#0f1a28', crossColor: '#2a3d5a',
+      labelBg: '#111926', borderColor: '#1c2840', textColor: '#7a8fa6',
+      upColor: '#26a69a', downColor: '#ef5350',
+      wickUpColor: '#26a69a', wickDownColor: '#ef5350',
     },
     'TradingView': {
       label: 'TradingView',
